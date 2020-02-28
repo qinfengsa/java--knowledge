@@ -1,4 +1,4 @@
-## ZooKeeper 
+# ZooKeeper 
 
 ZooKeeper 是一个开源的分布式协调服务，ZooKeeper 的设计目标是将那些复杂且容易出错的分布式一致性服务封装起来，构成一个高效可靠的原语集，并以一系列简单易用的接口提供给用户使用。ZooKeeper 是一个典型的分布式数据一致性解决方案，分布式应用程序可以基于 ZooKeeper 实现诸如数据发布/订阅、负载均衡、命名服务、分布式协调/通知、集群管理、Master 选举、分布式锁和分布式队列等功能。
 
@@ -53,10 +53,6 @@ ZooKeeper 本身就是一个分布式程序，为了保证高可用，需要以�
 
 - watcher监听在ZNode节点上；
 - 当节点的数据更新或子节点的状态发生变化都会使客户端的watcher得到通知；
-
-
-
-
 
 ### ACL(访问控制)
 
@@ -142,7 +138,8 @@ ZooKeeper 本身就是一个分布式程序，为了保证高可用，需要以�
 
 二阶段提交将一个事务的处理过程分为了投票和执行两个阶段，其核心是对每个事务都采用先尝试后提交的处理方式，因此也可以将二阶段提交看作一个强一致性的算法；
 
-**优点：**原理简单,实现方便.
+**优点：**原理简单，实现方便
+
 **缺点：**同步阻塞、单点问题、数据不一致、容错性
 
 * 同步阻塞：在二阶段提交的执行过程中，所有参与的事务都处于阻塞状态，会导致无法进行其他操作
@@ -242,11 +239,12 @@ ZooKeeper 本身就是一个分布式程序，为了保证高可用，需要以�
 
 Paxos三种角色：Proposer, Acceptor, Learner 
 
-* **Proposer：**只要 Proposer发的提案被半数以上 Acceptor接受，Proposer就认为该提案里的value被选定
-* **Acceptor：**只要 Acceptor接受了某个提案，Acceptor I就认为该提案里的 value被选定了
-* **Learner :   **Acceptor告诉 Learner哪个 value被选定，Learner就认为那个value被选定
+* **Proposer**：只要 Proposer发的提案被半数以上 Acceptor接受，Proposer就认为该提案里的value被选定
+* **Acceptor**：只要 Acceptor接受了某个提案，Acceptor 就认为该提案里的 value被选定了
+* **Learner**: Acceptor告诉 Learner哪个 value被选定，Learner就认为那个value被选定
 
 Paxos算法分为两个阶段：
+
 **阶段一(准 leader 确定)**
 
 1. Proposer选择一个提案编号N，然后向半数以上的 Acceptor发送编号为N的 Prepare请求
@@ -275,11 +273,11 @@ ZAB协议包括两种基本的模式，分别是 **崩溃恢复和消息广播**
 
 在这种简化了的二阶段提交模型下，是无法处理 Leader服务器崩溃退出而带来的数据不一致问题的，因此在ZAB协议中添加了另一个模式，即釆用崩溃恢复模式来解决这个问题。另外，整个消息广播协议是基于具有FIFO特性的TCP协议来进行网络通信的，因此能够很容易地保证消息广播过程中消息接收与发送的顺序性。
 
-**崩溃恢复：** Zab 协议的广播部分不能处理 leader 挂掉的情况，Zab 协议引入了恢复模式来处理这一问题。为了使 leader 挂了后系统能正常工作，需要解决以下两个问题：
+**崩溃恢复：** ZAB 协议的广播部分不能处理 leader 挂掉的情况，ZAB 协议引入了恢复模式来处理这一问题。为了使 leader 挂了后系统能正常工作，需要解决以下两个问题：
 
 **已经被处理的消息不能丢**
 
-为了实现已经被处理的消息不能丢这个目的，Zab 的恢复模式使用了以下的策略：
+为了实现已经被处理的消息不能丢这个目的，ZAB 的恢复模式使用了以下的策略：
 
 1. 选举拥有 proposal 最大值（即 zxid 最大） 的节点作为新的 leader：由于所有提案被 COMMIT 之前必须有合法数量的 follower ACK，即必须有合法数量的服务器的事务日志上有该提案的 proposal，因此，只要有合法数量的节点正常工作，就必然有一个节点保存了所有被 COMMIT 消息的 proposal 状态。
 2. 新的 leader 将自己事务日志中 proposal 但未 COMMIT 的消息处理。
@@ -288,7 +286,9 @@ ZAB协议包括两种基本的模式，分别是 **崩溃恢复和消息广播**
 
 **被丢弃的消息不能再次出现**
 
-Zab 通过巧妙的设计 zxid 来实现这一目的。一个 zxid 是64位，高 32 是朝代（epoch）编号，每经过一次 leader 选举产生一个新的 leader，新 leader 会将 epoch 号 +1。低 32 位是消息计数器，每接收到一条消息这个值 +1，新 leader 选举后这个值重置为 0。这样设计的好处是旧的 leader 挂了后重启，它不会被选举为 leader，因为此时它的 zxid 肯定小于当前的新 leader。当旧的 leader 作为 follower 接入新的 leader 后，新的 leader 会让它将所有的拥有旧的 epoch 号的未被 COMMIT 的 proposal 清除。
+ZAB 通过巧妙的设计 zxid 来实现这一目的。一个 zxid 是64位，高 32 是朝代（epoch）编号，每经过一次 leader 选举产生一个新的 leader，新 leader 会将 epoch 号 +1。低 32 位是消息计数器，每接收到一条消息这个值 +1，新 leader 选举后这个值重置为 0。这样设计的好处是旧的 leader 挂了后重启，它不会被选举为 leader，因为此时它的 zxid 肯定小于当前的新 leader。当旧的 leader 作为 follower 接入新的 leader 后，新的 leader 会让它将所有的拥有旧的 epoch 号的未被 COMMIT 的 proposal 清除。
+
+ZAB 的核心：少数服从多数；资历老（处理的事务最多，zxid最大）的节点优先继位
 
 ## ZooKeeper 数据模型
 
@@ -331,7 +331,9 @@ ZNode分为持久节点和临时节点两种类型：
 |  numChildren   | 当前节点的子节点个数                                         |
 |     pzxid      | 表示该节点的子节点列表最后一次被修改时的事务ID；<br/>注意：只有子节点列表变更了才会变更 pzxid，子节点内容变更不会影响 pzxid |
 
-### 版本--保证分布式数据原子性操作
+### 版本
+
+**保证分布式数据原子性操作**
 
 ZooKeeper中为数据节点引入了版本的概念，每个数据节点都具有三种类型的版本信息，对数据节点的任何更新操作都会引起版本号的变化 
 
@@ -349,7 +351,7 @@ ZooKeeper中为数据节点引入了版本的概念，每个数据节点都具�
 
 简单来说：顺序一致性是针对单个操作，单个数据对象。属于CAP 中C这个范畴。一个数据被更新后，能够立马被后续的读操作读到。
 
-client 会记录自己已经读取到的最大的zxid，如果client 重连到server 发现 client 的zxid 更大。连接会失败；client 只要连接过一次zookeeper，就不会有历史的倒退
+client 会记录自己已经读取到的最大的zxid，如果client 重连到server 发现 client 的zxid 更大。连接会失败；client 只要连接过一次ZooKeeper ，就不会有历史的倒退
 
 ### **ZooKeeper 分布式锁**
 
@@ -358,7 +360,7 @@ client 会记录自己已经读取到的最大的zxid，如果client 重连到se
 多个进程往ZooKeeper 的指定节点下创建一个相同名称的节点，只有一个能成功，其余创建失败；创建失败的节点全部通过ZooKeeper 的watcher 机制来监听ZooKeeper 这个子节点的变化，一旦监听到子节点的删除事件，则再次触发所有进程去写锁；
 
 这种实现方式很简单，但是会产生“惊群效应”，简单来说就是如果存在许多的客户端在等待获取锁，当成功获取到锁的进程释放该节点后，所有处于等待状态的客户端都会被唤醒，这个时候ZooKeeper 在短时间内发送大量子节点变更事件给所有待获取锁的客户端，然后实际情况是只会有一个客户端获得锁。如果在集群规模比较大的情况下，会对ZooKeeper 服务器的性能产生比较的影响。
- 
+
 
 **利用临时有序节点来实现分布式锁**
 
@@ -383,7 +385,7 @@ client 会记录自己已经读取到的最大的zxid，如果client 重连到se
 
 
 
-### 服务器启动期间的Leader 选举
+### 启动期间的Leader 选举
 
 每个节点启动的时候状态都是LOOKING，处于观望状态，接下来就开始进行选主流程
 
@@ -403,21 +405,1463 @@ client 会记录自己已经读取到的最大的zxid，如果client 重连到se
 
    对于Server1 而言，它的投票是(1, 0)，接收Server2 的投票为(2, 0)，首先会比较两者的ZXID，均为0，再比较myid，此Server2 的myid 最大，于是更新自己的投票为(2, 0)，然后重新投票，对于Server2 而言，其无须更新自己的投票，只是再次向集群中所有机器发出上一次投票信息即可。
    
-
 4. **统计投票：**每次投票后，服务器都会统计投票信息，判断是否已经有过半机器接受到相同的投票信息，对于Server1、Server2 而言，都统计出集群中已经有两台机器接受了(2, 0)的投票信息，此时便认为已经选出了Leader。
 
 5. **改变服务器状态：**一旦确定了Leader，每个服务器就会更新自己的状态，如果是Follower，那么就变更为FOLLOWING，如果是Leader，就变更为LEADING。
 
-### 服务器运行期间的Leader 选举
+### 运行期间的Leader 选举
 
 当集群中的leader 服务器出现宕机或者不可用的情况时，那么整个集群将无法对外提供服务，而是进入新一轮的Leader 选举，服务器运行期间的Leader 选举和启动时期的Leader 选举基本过程是一致的。
 
-1. **变更状态：**Leader 挂后，余下的非Observer 服务器都会将自己的服
-   务器状态变更为LOOKING，然后开始进入Leader 选举过程。
-2. **每个Server 会发出一个投票：**在运行期间，每个服务器上的ZXID 可能不同，此时假定Server1 的ZXID 为123，Server3 的ZXID 为122；在第一轮投票中，Server1 和Server3 都会投自己，产生投票(1, 123)，(3, 122)，然后各自将投票发送给集群中所有机器。接收来自各个服务器的投票。与启动时过程相同。
-3. **处理投票：**与启动时过程相同，此时，Server1 将会成为Leader。
-4. **统计投票：**与启动时过程相同。
-5. **改变服务器的状态：**与启动时过程相同
+1. **变更状态**：Leader 挂后，余下的非Observer 服务器都会将自己的服务器状态变更为LOOKING，然后开始进入Leader 选举过程。
+2. **每个Server 会发出一个投票**：在运行期间，每个服务器上的ZXID 可能不同，此时假定Server1 的ZXID 为123，Server3 的ZXID 为122；在第一轮投票中，Server1 和Server3 都会投自己，产生投票(1, 123)，(3, 122)，然后各自将投票发送给集群中所有机器。接收来自各个服务器的投票。与启动时过程相同。
+3. **处理投票**：与启动时过程相同，此时，Server1 将会成为Leader。
+4. **统计投票**：与启动时过程相同。
+5. **改变服务器的状态**：与启动时过程相同
+
+
+
+# 源码分析
+
+## 服务端
+
+### ZooKeeperServer
+
+![ZooKeeperServer](img/ZooKeeperServer.png)
+
+**ZooKeeperServer**: 所有服务器的父类，请求处理链为PrepRequestProcessor -> SyncRequestProcessor -> FinalRequestProcessor。
+
+**QuorumZooKeeperServer**: 其是所有参与选举的服务器的父类，是抽象类，其继承了ZooKeeperServer类。
+
+**LeaderZooKeeperServer**: Leader服务器，继承了QuorumZooKeeperServer类，其请求处理链为PrepRequestProcessor -> ProposalRequestProcessor -> CommitProcessor -> Leader.ToBeAppliedRequestProcessor -> FinalRequestProcessor。
+
+**LearnerZooKeeper**: Follower和Observer的父类，为抽象类，也继承了QuorumZooKeeperServer类。
+
+**FollowerZooKeeperServer**: Follower服务器，继承了LearnerZooKeeper，其请求处理链为FollowerRequestProcessor -> CommitProcessor -> FinalRequestProcessor。
+
+**ObserverZooKeeperServer**: Observer服务器，继承了LearnerZooKeeper。
+
+**ReadOnlyZooKeeperServer**: 只读服务器，不提供写服务；其处理链的第一个处理器为ReadOnlyRequestProcessor。
+
+~~~java
+public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
+    // JMX服务
+    protected ZooKeeperServerBean jmxServerBean;
+    protected DataTreeBean jmxDataTreeBean; 
+    // 默认心跳频率
+    public static final int DEFAULT_TICK_TIME = 3000;
+    protected int tickTime = DEFAULT_TICK_TIME; 
+    // 最小会话过期时间
+    protected int minSessionTimeout = -1; 
+    // 最大会话过期时间
+    protected int maxSessionTimeout = -1;
+    // 会话跟踪器
+    protected SessionTracker sessionTracker;
+    // 事务日志快照
+    private FileTxnSnapLog txnLogFactory = null;
+    // Zookeeper内存数据库
+    private ZKDatabase zkDb;
+    // zxid
+    private final AtomicLong hzxid = new AtomicLong(0);
+    public final static Exception ok = new Exception("No prob");
+    // 请求处理器
+    protected RequestProcessor firstProcessor;
+    // 运行状态
+    protected volatile State state = State.INITIAL;
+
+    protected enum State {
+        INITIAL, RUNNING, SHUTDOWN, ERROR
+    } 
+    static final private long superSecret = 0XB3415C00L;
+    // 处理中的请求数
+    private final AtomicInteger requestsInProcess = new AtomicInteger(0);
+    final Deque<ChangeRecord> outstandingChanges = new ArrayDeque<>();
+    // this data structure must be accessed under the outstandingChanges lock
+    final HashMap<String, ChangeRecord> outstandingChangesForPath =
+        new HashMap<String, ChangeRecord>();
+ 	// 连接工厂
+    protected ServerCnxnFactory serverCnxnFactory;
+    protected ServerCnxnFactory secureServerCnxnFactory;
+    // server 状态信息
+    private final ServerStats serverStats;
+    // 监听器
+    private final ZooKeeperServerListener listener;
+    private ZooKeeperServerShutdownHandler zkShutdownHandler;
+    private volatile int createSessionTrackerServerId = 1;
+    
+    // 构造方法
+    public ZooKeeperServer(FileTxnSnapLog txnLogFactory, int tickTime,
+            int minSessionTimeout, int maxSessionTimeout, ZKDatabase zkDb) {
+        // 服务器状态信息
+        serverStats = new ServerStats(this);
+        this.txnLogFactory = txnLogFactory;
+        this.txnLogFactory.setServerStats(this.serverStats);
+        // 数据存储
+        this.zkDb = zkDb;
+        this.tickTime = tickTime;
+        setMinSessionTimeout(minSessionTimeout);
+        setMaxSessionTimeout(maxSessionTimeout);
+        // 创建监听器
+        listener = new ZooKeeperServerListenerImpl(this); 
+    }
+    
+}
+~~~
+
+#### startup
+
+~~~java
+public synchronized void startup() {
+    if (sessionTracker == null) {
+        // 创建 会话跟踪器
+        createSessionTracker();
+    }
+    // 启动线程 SessionTracker
+    startSessionTracker();
+    // 创建请求处理链, 启动 firstProcessor（是一个线程）
+    setupRequestProcessors();
+
+    registerJMX();
+    // 设置状态
+    setState(State.RUNNING);
+    // 释放锁
+    notifyAll();
+}
+protected void setupRequestProcessors() {
+    // FinalRequestProcessor 请求处理链的最后一个处理器
+    RequestProcessor finalProcessor = new FinalRequestProcessor(this);
+    // FinalRequestProcessor 同步请求的处理器
+    RequestProcessor syncProcessor = new SyncRequestProcessor(this, finalProcessor);
+    ((SyncRequestProcessor)syncProcessor).start();
+    // PrepRequestProcessor 请求处理链的第一个处理器
+    firstProcessor = new PrepRequestProcessor(this, syncProcessor);
+    ((PrepRequestProcessor)firstProcessor).start();
+}
+~~~
+
+#### LeaderZooKeeperServer
+
+~~~java
+public class LeaderZooKeeperServer extends QuorumZooKeeperServer {
+    
+    // 重写方法
+    @Override
+    protected void setupRequestProcessors() {
+        RequestProcessor finalProcessor = new FinalRequestProcessor(this);
+        RequestProcessor toBeAppliedProcessor = 
+            new Leader.ToBeAppliedRequestProcessor(finalProcessor, getLeader());
+        commitProcessor = new CommitProcessor(toBeAppliedProcessor,
+                Long.toString(getServerId()), false,
+                getZooKeeperServerListener());
+        commitProcessor.start();
+        ProposalRequestProcessor proposalProcessor = new ProposalRequestProcessor(this,
+                commitProcessor);
+        proposalProcessor.initialize();
+        prepRequestProcessor = new PrepRequestProcessor(this, proposalProcessor);
+        prepRequestProcessor.start();
+        firstProcessor = new LeaderRequestProcessor(this, prepRequestProcessor);
+
+        setupContainerManager();
+    }
+}
+~~~
+
+
+
+
+
+#### FollowerZooKeeperServer
+
+~~~java
+public class FollowerZooKeeperServer extends LearnerZooKeeperServer {
+    
+}
+~~~
+
+
+
+#### ObserverZooKeeperServer
+
+~~~java
+public class ObserverZooKeeperServer extends LearnerZooKeeperServer {
+    
+}
+~~~
+
+
+
+### Server启动
+
+启动类QuorumPeerMain
+
+~~~java
+public class QuorumPeerMain {
+    public static void main(String[] args) {
+        QuorumPeerMain main = new QuorumPeerMain();
+        try {
+            // 初始化并运行
+            main.initializeAndRun(args);
+        } catch  // ..  
+    }
+    protected void initializeAndRun(String[] args) throws ConfigException, IOException, AdminServerException{
+        // 解析配置
+        QuorumPeerConfig config = new QuorumPeerConfig();
+        if (args.length == 1) {
+            config.parse(args[0]);
+        } 
+        DatadirCleanupManager purgeMgr = new DatadirCleanupManager(config
+                .getDataDir(), config.getDataLogDir(), config
+                .getSnapRetainCount(), config.getPurgeInterval());
+        purgeMgr.start();
+
+        if (args.length == 1 && config.isDistributed()) {
+            // 集群启动
+            runFromConfig(config);
+        } else { 
+            // 单机启动
+            ZooKeeperServerMain.main(args);
+        }
+    }
+    // 集群启动
+    public void runFromConfig(QuorumPeerConfig config) throws IOException, AdminServerException  {
+        try {
+            ManagedUtil.registerLog4jMBeans();
+        } catch (JMException e) { 
+        } 
+        try {
+            ServerCnxnFactory cnxnFactory = null;
+            ServerCnxnFactory secureCnxnFactory = null;
+			// 创建通信工厂 ServerCnxnFactory
+            if (config.getClientPortAddress() != null) {
+                cnxnFactory = ServerCnxnFactory.createFactory();
+                cnxnFactory.configure(config.getClientPortAddress(), config.getMaxClientCnxns(), false);
+            } 
+            if (config.getSecureClientPortAddress() != null) {
+                secureCnxnFactory = ServerCnxnFactory.createFactory();
+                secureCnxnFactory.configure(config.getSecureClientPortAddress(), config.getMaxClientCnxns(),
+                                            true);
+            }
+            // 创建QuorumPeer ZooKeeperThread的子类, 是一个线程
+            quorumPeer = getQuorumPeer(); 
+            // ... 省略 quorumPeer set 参数
+
+            quorumPeer.initialize();
+            // quorumPeer 是一个线程, 启动
+            quorumPeer.start();
+            quorumPeer.join();
+        } catch (InterruptedException e) {
+            // warn, but generally this is ok
+            LOG.warn("Quorum Peer interrupted", e);
+        }
+    }
+}
+~~~
+
+#### QuorumPeer 
+
+QuorumPeer是ZooKeeper执行同步、选主过程的线程
+
+~~~java
+public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider {
+    // 当前服务器角色
+    private ServerState state = ServerState.LOOKING;
+    public enum ServerState {
+        LOOKING, FOLLOWING, LEADING, OBSERVING;
+    }
+    @Override
+    public synchronized void start() {
+        if (!getView().containsKey(myid)) {
+            throw new RuntimeException("My id " + myid + " not in the peer list");
+        }
+        // 恢复快照数据
+        loadDataBase();
+        // 启动 网络通信 NIO 或 Netty
+        startServerCnxnFactory();
+        try {
+            adminServer.start();
+        } catch (AdminServerException e) {
+            LOG.warn("Problem starting AdminServer", e);
+            System.out.println(e);
+        }
+        // 开始选举
+        startLeaderElection();
+        // 线程启动 执行run()
+        super.start();
+    }
+}
+~~~
+
+##### 线程运行
+
+~~~java
+@Override
+public void run() {
+    updateThreadName(); 
+    // ... 省略 JMX 初始化代码  
+    try { 
+        while (running) {
+            // 判断当前服务器参加选举后的角色
+            switch (getPeerState()) {
+
+                case LOOKING: 
+                    // 当前服务是否 只读服务
+                    if (Boolean.getBoolean("readonlymode.enabled")) { 
+                        final ReadOnlyZooKeeperServer roZk =
+                            new ReadOnlyZooKeeperServer(logFactory, this, this.zkDb); 
+                        Thread roZkMgr = new Thread() {
+                            public void run() {
+                                try {
+                                    // lower-bound grace period to 2 secs
+                                    sleep(Math.max(2000, tickTime));
+                                    if (ServerState.LOOKING.equals(getPeerState())) {
+                                        roZk.startup();
+                                    }
+                                } // catch ... 
+                            }
+                        };
+                        try {
+                            roZkMgr.start();
+                            reconfigFlagClear();
+                            if (shuttingDownLE) {
+                                shuttingDownLE = false;
+                                startLeaderElection();
+                            }
+                            setCurrentVote(makeLEStrategy().lookForLeader());
+                        } catch (Exception e) { 
+                            setPeerState(ServerState.LOOKING);
+                        } finally { 
+                            roZkMgr.interrupt();
+                            roZk.shutdown();
+                        }
+                    } else {
+                        // ZooKeeper 启动时所有节点初始状态为Looking
+                        // Follower 失去 Leader 后也会进入 Looking
+                       
+                        try {
+                            reconfigFlagClear();
+                            if (shuttingDownLE) {
+                                shuttingDownLE = false;
+                                 // 开始 Leader 选举
+                                startLeaderElection();
+                            }
+                            setCurrentVote(makeLEStrategy().lookForLeader());
+                        } catch (Exception e) { 
+                            setPeerState(ServerState.LOOKING);
+                        }                        
+                    }
+                    break;
+                case OBSERVING:
+                    // 创建 Observer 服务
+                    try { 
+                        setObserver(makeObserver(logFactory));
+                        observer.observeLeader();
+                    } catch (Exception e) { 
+                    } finally {
+                        observer.shutdown();
+                        setObserver(null);  
+                        updateServerState();
+                    }
+                    break;
+                case FOLLOWING:
+                    // 创建 Follower 服务
+                    try { 
+                        setFollower(makeFollower(logFactory));
+                        follower.followLeader();
+                    } catch (Exception e) { 
+                    } finally {
+                        follower.shutdown();
+                        setFollower(null);
+                        updateServerState();
+                    }
+                    break;
+                case LEADING:
+                    // 创建 Leader 服务 
+                    try {
+                        setLeader(makeLeader(logFactory));
+                        leader.lead();
+                        setLeader(null);
+                    } catch (Exception e) { 
+                    } finally {
+                        if (leader != null) { 
+                            setLeader(null);
+                        }
+                        updateServerState();
+                    }
+                    break;
+            }
+            start_fle = Time.currentElapsedTime();
+        }
+    } finally { 
+        //  ... 省略 JMX 代码   
+    }
+}
+~~~
+
+#### Leader
+
+##### makeLeader
+
+~~~java
+protected Leader makeLeader(FileTxnSnapLog logFactory) throws IOException, X509Exception {
+    // 创建 LeaderZooKeeperServer
+    return new Leader(this, new LeaderZooKeeperServer(logFactory, this, this.zkDb));
+}
+~~~
+
+##### leader.lead()
+
+
+
+#### Follower
+
+##### makeFollower
+
+~~~java
+protected Follower makeFollower(FileTxnSnapLog logFactory) throws IOException {
+    // 创建 FollowerZooKeeperServer
+    return new Follower(this, new FollowerZooKeeperServer(logFactory, this, this.zkDb));
+} 
+~~~
+
+##### follower.followLeader()
+
+~~~java
+void followLeader() throws InterruptedException {
+    self.end_fle = Time.currentElapsedTime();
+    long electionTimeTaken = self.end_fle - self.start_fle;
+    self.setElectionTimeTaken(electionTimeTaken); 
+    self.start_fle = 0;
+    self.end_fle = 0;
+    fzk.registerJMX(new FollowerBean(this, zk), self.jmxLocalPeerBean);
+    try {
+        // 根据sid找到对应leader，拿到lead连接信息
+        QuorumServer leaderServer = findLeader();            
+        try {
+            // 连接到Leader
+            connectToLeader(leaderServer.addr, leaderServer.hostname);
+            long newEpochZxid = registerWithLeader(Leader.FOLLOWERINFO);
+            if (self.isReconfigStateChange())
+                throw new Exception("learned about role change"); 
+            // 如果leader的epoch比当前follow节点的epoch还小,抛异常
+            long newEpoch = ZxidUtils.getEpochFromZxid(newEpochZxid);
+            if (newEpoch < self.getAcceptedEpoch()) { 
+                throw new IOException("Error: Epoch of leader is lower");
+            }
+            // 和leader进行数据同步, 同步过程中会启动 FollowerZooKeeperServer
+            syncWithLeader(newEpochZxid);                
+            QuorumPacket qp = new QuorumPacket();
+            while (this.isRunning()) {
+                // 从leader读取数据包
+                readPacket(qp);
+                // 处理packet
+                processPacket(qp);
+            }
+        } catch (Exception e) { 
+            try {
+                sock.close();
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            } 
+            // clear pending revalidations
+            pendingRevalidations.clear();
+        }
+    } finally {
+        zk.unregisterJMX((Learner)this);
+    }
+}
+~~~
+
+
+
+#### Observer
+
+##### makeObserver
+
+~~~java
+protected Observer makeObserver(FileTxnSnapLog logFactory) throws IOException {
+    // 创建 ObserverZooKeeperServer
+    return new Observer(this, new ObserverZooKeeperServer(logFactory, this, this.zkDb));
+}
+~~~
+
+##### observer.observeLeader()
+
+~~~java
+void observeLeader() throws Exception {
+    zk.registerJMX(new ObserverBean(this, zk), self.jmxLocalPeerBean); 
+    try {
+        // 根据sid找到对应leader，拿到lead连接信息
+        QuorumServer leaderServer = findLeader(); 
+        try {
+            // 连接到Leader
+            connectToLeader(leaderServer.addr, leaderServer.hostname);
+            long newLeaderZxid = registerWithLeader(Leader.OBSERVERINFO);
+            if (self.isReconfigStateChange())
+                throw new Exception("learned about role change");
+            // 和leader进行数据同步, 同步过程中会启动 ObserverZooKeeperServer
+            syncWithLeader(newLeaderZxid);
+            QuorumPacket qp = new QuorumPacket();
+            while (this.isRunning()) {
+                // 从leader读取数据包
+                readPacket(qp);
+                // 处理packet
+                processPacket(qp);
+            }
+        } catch (Exception e) { 
+            try {
+                sock.close();
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            } 
+            // clear pending revalidations
+            pendingRevalidations.clear();
+        }
+    } finally {
+        zk.unregisterJMX(this);
+    }
+}
+~~~
+
+
+
+
+
+### Leader选举
+
+~~~java
+synchronized public void startLeaderElection() {
+    try {
+        if (getPeerState() == ServerState.LOOKING) {
+            // 初始化投票, 用于记录投票
+            currentVote = new Vote(myid, getLastLoggedZxid(), getCurrentEpoch());
+        }
+    } catch(IOException e) {
+        RuntimeException re = new RuntimeException(e.getMessage());
+        re.setStackTrace(e.getStackTrace());
+        throw re;
+    } 
+    if (electionType == 0) {
+        try {
+            udpSocket = new DatagramSocket(getQuorumAddress().getPort());
+            responder = new ResponderThread();
+            responder.start();
+        } catch (SocketException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    // 选举算法
+    this.electionAlg = createElectionAlgorithm(electionType);
+}
+protected Election createElectionAlgorithm(int electionAlgorithm){
+    Election le=null;
+
+    // 根据配置选择算法 默认值位3
+    switch (electionAlgorithm) {
+        case 0:
+            le = new LeaderElection(this);
+            break;
+        case 1:
+            le = new AuthFastLeaderElection(this);
+            break;
+        case 2:
+            le = new AuthFastLeaderElection(this, true);
+            break;
+        case 3:
+            // 默认 
+            QuorumCnxManager qcm = createCnxnManager();
+            QuorumCnxManager oldQcm = qcmRef.getAndSet(qcm);
+            if (oldQcm != null) { 
+                oldQcm.halt();
+            }
+            QuorumCnxManager.Listener listener = qcm.listener;
+            if(listener != null){
+                listener.start();
+                // 当前默认选择FastLeaderElection,初始化
+                FastLeaderElection fle = new FastLeaderElection(this, qcm);
+                fle.start();
+                le = fle;
+            } else { 
+            }
+            break;
+        default:
+            assert false;
+    }
+    return le;
+}
+~~~
+
+#### FastLeaderElection
+
+~~~java
+public class FastLeaderElection implements Election {
+    // 构造方法
+    public FastLeaderElection(QuorumPeer self, QuorumCnxManager manager){
+        this.stop = false;
+        this.manager = manager;
+        starter(self, manager);
+    }
+    private void starter(QuorumPeer self, QuorumCnxManager manager) {
+        this.self = self;
+        proposedLeader = -1;
+        proposedZxid = -1;
+        // 发送队列
+        sendqueue = new LinkedBlockingQueue<ToSend>();
+        // 接收队列
+        recvqueue = new LinkedBlockingQueue<Notification>();
+        this.messenger = new Messenger(manager);
+    }
+}
+~~~
+
+##### Messenger
+
+~~~java
+protected class Messenger {
+    Messenger(QuorumCnxManager manager) {
+        // WorkerSender ZooKeeperThread的子类 用来发送消息
+        this.ws = new WorkerSender(manager); 
+        this.wsThread = new Thread(this.ws, "WorkerSender[myid=" + self.getId() + "]");
+        this.wsThread.setDaemon(true);
+        // WorkerReceiver ZooKeeperThread的子类 用来接收消息
+        this.wr = new WorkerReceiver(manager);
+
+        this.wrThread = new Thread(this.wr,  "WorkerReceiver[myid=" + self.getId() + "]");
+        this.wrThread.setDaemon(true);
+    }
+}
+~~~
+
+##### start
+
+~~~java
+public class FastLeaderElection implements Election {	
+	public void start() {
+        this.messenger.start();
+    }
+}
+protected class Messenger {
+    void start(){
+        // 启动两个线程,用于发送和接收消息
+        this.wsThread.start();
+        this.wrThread.start();
+    }
+}
+~~~
+
+#### 选举流程
+
+选择好选举算法后，QuorumPeer线程启动，当前状态为Looking，执行下面的方法
+
+~~~Java
+// 设置投票
+setCurrentVote(makeLEStrategy().lookForLeader());
+~~~
+
+##### lookForLeader
+
+~~~java
+public class FastLeaderElection implements Election {	
+	public Vote lookForLeader() throws InterruptedException {
+        try {
+            self.jmxLeaderElectionBean = new LeaderElectionBean();
+            MBeanRegistry.getInstance().register(
+                    self.jmxLeaderElectionBean, self.jmxLocalPeerBean);
+        } catch (Exception e) {
+            self.jmxLeaderElectionBean = null;
+        }
+        if (self.start_fle == 0) {
+           self.start_fle = Time.currentElapsedTime();
+        }
+        try {
+            HashMap<Long, Vote> recvset = new HashMap<Long, Vote>();
+
+            HashMap<Long, Vote> outofelection = new HashMap<Long, Vote>();
+
+            int notTimeout = finalizeWait;
+
+            synchronized(this){
+                // 更新逻辑时钟,每进行一轮选举,都需要更新逻辑时钟
+                logicalclock.incrementAndGet();
+                // 更新选票  把当前节点的myid,zxid,epoch更新到本地的成员属性
+                updateProposal(getInitId(), getInitLastLoggedZxid(), getPeerEpoch());
+            }
+            // 向其他服务器发送自己的选票 把信息放入阻塞队列sendqueue, 由wsThread 发送信息
+            sendNotifications();
+            // 状态为LOOKING并且还未选出leader
+            while ((self.getPeerState() == ServerState.LOOKING) &&
+                    (!stop)){
+                // 从recvqueue接收队列中取出投票
+                Notification n = recvqueue.poll(notTimeout,TimeUnit.MILLISECONDS);
+                // 如果没有获取到外部的投票 有可能是集群之间的节点没有真正连接上
+                if(n == null){
+                    // 判断发送队列是否有数据
+                    if(manager.haveDelivered()){
+                        // 如果发送队列为空,重新发一次自己的选票
+                        sendNotifications();
+                    } else { // 发送队列不为空, 可能没有连接
+                        // 重新连接
+                        manager.connectAll();
+                    }
+                    int tmpTimeOut = notTimeout*2;
+                    notTimeout = (tmpTimeOut < maxNotificationInterval?tmpTimeOut : maxNotificationInterval);
+                }
+                // 校验投票信息 判断服务器id是否在投票服务器集合中
+                else if (validVoter(n.sid) && validVoter(n.leader)) {
+                    switch (n.state) {
+                        // LOOKING 服务器也是在找leader
+                    case LOOKING: 
+                        // 如果收到的投票的逻辑时钟大于当前的节点的逻辑时钟
+                        if (n.electionEpoch > logicalclock.get()) {
+                            // 重新赋值逻辑时钟
+                            logicalclock.set(n.electionEpoch);
+                            recvset.clear();
+                            // 选出较优的服务器
+                            if(totalOrderPredicate(n.leader, n.zxid, n.peerEpoch,
+                                    getInitId(), getInitLastLoggedZxid(), getPeerEpoch())) {
+                                updateProposal(n.leader, n.zxid, n.peerEpoch);
+                            } else {
+                                // 否则,说明当前节点的票据优先级更高,再次更新自己的票据
+                                updateProposal(getInitId(),
+                                        getInitLastLoggedZxid(),
+                                        getPeerEpoch());
+                            }
+                            // 再次发送消息
+                            sendNotifications();
+                        } else if (n.electionEpoch < logicalclock.get()) {
+                            // 如果小于，说明收到的票据已经过期了，直接把这张票丢掉 
+                            break;
+                        // epoch相同,并且能选出较优的服务器
+                        } else if (totalOrderPredicate(n.leader, n.zxid, n.peerEpoch,
+                                proposedLeader, proposedZxid, proposedEpoch)) {
+                            updateProposal(n.leader, n.zxid, n.peerEpoch);
+                            // 把收到的票据再发出去,告诉大家我要选n.leader为leader
+                            sendNotifications();
+                        }
+ 
+                        // 将收到的投票信息放入投票的集合recvset 中, 用来作为  最终的"过半原则" 判断
+                        recvset.put(n.sid, new Vote(n.leader, n.zxid, n.electionEpoch, n.peerEpoch));
+                        // 判断选举是否结束
+                        if (termPredicate(recvset,
+                                new Vote(proposedLeader, proposedZxid,
+                                        logicalclock.get(), proposedEpoch))) { 
+                            // 遍历已经接收的投票集合
+                            while((n = recvqueue.poll(finalizeWait,
+                                    TimeUnit.MILLISECONDS)) != null){
+                                // 能够选出较优的服务器
+                                if(totalOrderPredicate(n.leader, n.zxid, n.peerEpoch,
+                                        proposedLeader, proposedZxid, proposedEpoch)){
+                                    recvqueue.put(n);
+                                    break;
+                                }
+                            }
+
+                            // 如果notifaction为空，说明Leader节点是可以确定好了
+                            if (n == null) {
+                                // 设置当前节点的状态
+                                // 判断leader节点是不是自己,如果是,直接更新当前节点的state为LEADING 
+                                // 否则,根据当前节点的特性进行判断 FOLLOWING还是OBSERVING
+                                self.setPeerState((proposedLeader == self.getId()) ?
+                                        ServerState.LEADING: learningState());
+                                // 组装生成这次Leader 选举最终的投票的结果
+                                Vote endVote = new Vote(proposedLeader,
+                                        proposedZxid, logicalclock.get(), 
+                                        proposedEpoch);
+                                // 清空 recvqueue
+                                leaveInstance(endVote);
+                                // 返回最终的票据
+                                return endVote;
+                            }
+                        }
+                        break;
+                    case OBSERVING:
+                        // OBSERVING不参与leader选举
+                        LOG.debug("Notification from observer: " + n.sid);
+                        break;
+                    case FOLLOWING:
+                    case LEADING: 
+                        if(n.electionEpoch == logicalclock.get()){
+                            // 将该服务器和选票信息放入recvset中
+                            recvset.put(n.sid, new Vote(n.leader, n.zxid, n.electionEpoch, n.peerEpoch));
+                            // 判断是否完成了leader选举
+                            if(termPredicate(recvset, new Vote(n.version, n.leader,
+                                            n.zxid, n.electionEpoch, n.peerEpoch, n.state))
+                                            && checkLeader(outofelection, n.leader, n.electionEpoch)) {
+                                self.setPeerState((n.leader == self.getId()) ?
+                                        ServerState.LEADING: learningState());
+                                Vote endVote = new Vote(n.leader, 
+                                        n.zxid, n.electionEpoch, n.peerEpoch);
+                                leaveInstance(endVote);
+                                return endVote;
+                            }
+                        }
+ 
+                        outofelection.put(n.sid, new Vote(n.version, n.leader, 
+                                n.zxid, n.electionEpoch, n.peerEpoch, n.state));
+                        if (termPredicate(outofelection, new Vote(n.version, n.leader,
+                                n.zxid, n.electionEpoch, n.peerEpoch, n.state))
+                                && checkLeader(outofelection, n.leader, n.electionEpoch)) {
+                            synchronized(this){
+                                logicalclock.set(n.electionEpoch);
+                                self.setPeerState((n.leader == self.getId()) ?
+                                        ServerState.LEADING: learningState());
+                            }
+                            Vote endVote = new Vote(n.leader, n.zxid, 
+                                    n.electionEpoch, n.peerEpoch);
+                            leaveInstance(endVote);
+                            return endVote;
+                        }
+                        break;
+                    default: 
+                        break;
+                    }
+                } else { 
+                }
+            }
+            return null;
+        } finally {
+            try {
+                if(self.jmxLeaderElectionBean != null){
+                    MBeanRegistry.getInstance().unregister(  self.jmxLeaderElectionBean);
+                }
+            } catch (Exception e) { 
+            }
+            self.jmxLeaderElectionBean = null; 
+        }
+    }
+}
+~~~
+
+###### sendNotifications
+
+遍历所有的参与者投票集合，然后将自己的选票信息发送给所有的投票者集合，其并非同步发送，而是将ToSend消息放置于sendqueue中，之后由WorkerSender线程进行发送
+
+~~~java
+private void sendNotifications() {
+    // 遍历投票参与者集合
+    for (long sid : self.getCurrentAndNextConfigVoters()) {
+        QuorumVerifier qv = self.getQuorumVerifier();
+        // 构造发送消息
+        ToSend notmsg = new ToSend(ToSend.mType.notification, proposedLeader,proposedZxid,
+            logicalclock.get(),QuorumPeer.ServerState.LOOKING,sid,proposedEpoch, qv.toString().getBytes());
+       
+        // 将发送消息加入队列
+        sendqueue.offer(notmsg);
+    }
+}
+~~~
+
+totalOrderPredicate
+
+接收的投票与自身投票进行PK，查看是否消息中包含的服务器id是否更优，其按照epoch、zxid、id的优先级进行PK
+
+~~~java
+protected boolean totalOrderPredicate(long newId, long newZxid, long newEpoch, long curId, 
+    long curZxid, long curEpoch) {
+    // 使用计票器判断当前服务器的权重是否为0
+    if(self.getQuorumVerifier().getWeight(newId) == 0){
+        return false;
+    }
+    // 1. 判断消息里的epoch是不是比当前的大，如果大则消息中id对应的服务器就是leader
+    // 2. 如果epoch相等则判断zxid，如果消息里的zxid大，则消息中id对应的服务器就是leader
+    // 3. 如果前面两个都相等那就比较服务器id，如果大，则其就是leader
+    return ((newEpoch > curEpoch) ||
+            ((newEpoch == curEpoch) &&
+             ((newZxid > curZxid) || ((newZxid == curZxid) && (newId > curId)))));
+}
+~~~
+
+###### termPredicate
+
+用于判断Leader选举是否结束
+
+~~~java
+protected boolean termPredicate(Map<Long, Vote> votes, Vote vote) {
+    SyncedLearnerTracker voteSet = new SyncedLearnerTracker();
+    voteSet.addQuorumVerifier(self.getQuorumVerifier());
+    if (self.getLastSeenQuorumVerifier() != null
+        && self.getLastSeenQuorumVerifier().getVersion() > self
+        .getQuorumVerifier().getVersion()) {
+        voteSet.addQuorumVerifier(self.getLastSeenQuorumVerifier());
+    } 
+    // 遍历已经接收的投票集合
+    for (Map.Entry<Long, Vote> entry : votes.entrySet()) {
+        // 将等于当前投票的项放入set
+        if (vote.equals(entry.getValue())) {
+            voteSet.addAck(entry.getKey());
+        }
+    }
+    // 统计set,查看投某个id的票数是否超过一半
+    return voteSet.hasAllQuorums();
+}
+~~~
+
+图解
+
+![选举流程](img/选举流程.png)
+
+### 网络通信
+
+
+
+
+
+### 请求处理链
+
+
+
+## 客户端
+
+### ZooKeeper
+
+~~~java
+public class ZooKeeper implements AutoCloseable {
+	public ZooKeeper(String connectString, int sessionTimeout, Watcher watcher,
+    		long sessionId, byte[] sessionPasswd, boolean canBeReadOnly,
+    		HostProvider aHostProvider, ZKClientConfig clientConfig) throws IOException { 
+        // 客户端配置信息
+        if (clientConfig == null) {
+            clientConfig = new ZKClientConfig();
+        }
+        this.clientConfig = clientConfig;
+        // 使用 watchManager 管理监听; 默认ZKWatchManager
+        watchManager = defaultWatchManager();
+        watchManager.defaultWatcher = watcher;
+        // 解析 连接的地址
+        ConnectStringParser connectStringParser = new ConnectStringParser(
+                connectString);
+        hostProvider = aHostProvider;
+        // 创建 ClientCnxn, 调用cnxn.start()
+        cnxn = createConnection(connectStringParser.getChrootPath(),
+                hostProvider, sessionTimeout, this, watchManager,
+                getClientCnxnSocket(), canBeReadOnly);
+        // 启动线程
+        cnxn.start();
+    }
+    
+}
+~~~
+
+#### ClientCnxn
+
+~~~java
+public class ClientCnxn {	
+	public ClientCnxn(String chrootPath, HostProvider hostProvider, int sessionTimeout, ZooKeeper zooKeeper,
+            ClientWatchManager watcher, ClientCnxnSocket clientCnxnSocket,
+            long sessionId, byte[] sessionPasswd, boolean canBeReadOnly) {
+        this.zooKeeper = zooKeeper;
+        this.watcher = watcher;
+        this.sessionId = sessionId;
+        this.sessionPasswd = sessionPasswd;
+        this.sessionTimeout = sessionTimeout;
+        this.hostProvider = hostProvider;
+        this.chrootPath = chrootPath; 
+        connectTimeout = sessionTimeout / hostProvider.size();
+        readTimeout = sessionTimeout * 2 / 3;
+        readOnly = canBeReadOnly;
+        // send 线程  父类 ZooKeeperThread -> Thread
+        sendThread = new SendThread(clientCnxnSocket);
+        // event 线程 父类 ZooKeeperThread -> Thread
+        eventThread = new EventThread();
+        this.clientConfig=zooKeeper.getClientConfig();
+        initRequestTimeout();
+    }
+}
+~~~
+
+
+
+#### SendThread
+
+~~~java
+class SendThread extends ZooKeeperThread {
+    @Override
+    public void run() {
+        clientCnxnSocket.introduce(this, sessionId, outgoingQueue);
+        clientCnxnSocket.updateNow();
+        clientCnxnSocket.updateLastSendAndHeard();
+        int to;
+        long lastPingRwServer = Time.currentElapsedTime();
+        final int MAX_SEND_PING_INTERVAL = 10000; //10 seconds
+        InetSocketAddress serverAddress = null;
+        while (state.isAlive()) {
+            try {
+                if (!clientCnxnSocket.isConnected()) {
+                    // don't re-establish connection if we are closing
+                    if (closing) {
+                        break;
+                    }
+                    if (rwServerAddress != null) {
+                        serverAddress = rwServerAddress;
+                        rwServerAddress = null;
+                    } else {
+                        serverAddress = hostProvider.next(1000);
+                    }
+                    startConnect(serverAddress);
+                    clientCnxnSocket.updateLastSendAndHeard();
+                }
+
+                if (state.isConnected()) {
+                    // determine whether we need to send an AuthFailed event.
+                    if (zooKeeperSaslClient != null) {
+                        boolean sendAuthEvent = false;
+                        if (zooKeeperSaslClient.getSaslState() == ZooKeeperSaslClient.SaslState.INITIAL) {
+                            try {
+                                zooKeeperSaslClient.initialize(ClientCnxn.this);
+                            } catch (SaslException e) {
+                                LOG.error("SASL authentication with Zookeeper Quorum member failed: " + e);
+                                state = States.AUTH_FAILED;
+                                sendAuthEvent = true;
+                            }
+                        }
+                        KeeperState authState = zooKeeperSaslClient.getKeeperState();
+                        if (authState != null) {
+                            if (authState == KeeperState.AuthFailed) {
+                                // An authentication error occurred during authentication with the Zookeeper Server.
+                                state = States.AUTH_FAILED;
+                                sendAuthEvent = true;
+                            } else {
+                                if (authState == KeeperState.SaslAuthenticated) {
+                                    sendAuthEvent = true;
+                                }
+                            }
+                        }
+
+                        if (sendAuthEvent) {
+                            eventThread.queueEvent(new WatchedEvent(
+                                Watcher.Event.EventType.None,
+                                authState,null));
+                            if (state == States.AUTH_FAILED) {
+                                eventThread.queueEventOfDeath();
+                            }
+                        }
+                    }
+                    to = readTimeout - clientCnxnSocket.getIdleRecv();
+                } else {
+                    to = connectTimeout - clientCnxnSocket.getIdleRecv();
+                }
+
+                if (to <= 0) {
+                    String warnInfo;
+                    warnInfo = "Client session timed out, have not heard from server in "
+                        + clientCnxnSocket.getIdleRecv()
+                        + "ms"
+                        + " for sessionid 0x"
+                        + Long.toHexString(sessionId);
+                    LOG.warn(warnInfo);
+                    throw new SessionTimeoutException(warnInfo);
+                }
+                if (state.isConnected()) {
+                    //1000(1 second) is to prevent race condition missing to send the second ping
+                    //also make sure not to send too many pings when readTimeout is small 
+                    int timeToNextPing = readTimeout / 2 - clientCnxnSocket.getIdleSend() - 
+                        ((clientCnxnSocket.getIdleSend() > 1000) ? 1000 : 0);
+                    //send a ping request either time is due or no packet sent out within MAX_SEND_PING_INTERVAL
+                    if (timeToNextPing <= 0 || clientCnxnSocket.getIdleSend() > MAX_SEND_PING_INTERVAL) {
+                        sendPing();
+                        clientCnxnSocket.updateLastSend();
+                    } else {
+                        if (timeToNextPing < to) {
+                            to = timeToNextPing;
+                        }
+                    }
+                }
+
+                // If we are in read-only mode, seek for read/write server
+                if (state == States.CONNECTEDREADONLY) {
+                    long now = Time.currentElapsedTime();
+                    int idlePingRwServer = (int) (now - lastPingRwServer);
+                    if (idlePingRwServer >= pingRwTimeout) {
+                        lastPingRwServer = now;
+                        idlePingRwServer = 0;
+                        pingRwTimeout =
+                            Math.min(2*pingRwTimeout, maxPingRwTimeout);
+                        pingRwServer();
+                    }
+                    to = Math.min(to, pingRwTimeout - idlePingRwServer);
+                }
+                // 传输
+                clientCnxnSocket.doTransport(to, pendingQueue, ClientCnxn.this);
+            } catch (Throwable e) {
+                if (closing) { 
+                    break;
+                } else { 
+                    cleanAndNotifyState();
+                }
+            }
+        }
+        synchronized (state) { 
+            cleanup();
+        }
+        clientCnxnSocket.close();
+        if (state.isAlive()) {
+            eventThread.queueEvent(new WatchedEvent(Event.EventType.None,
+                                                    Event.KeeperState.Disconnected, null));
+        }
+        // 向队列中添加 Watcher
+        eventThread.queueEvent(new WatchedEvent(Event.EventType.None,Event.KeeperState.Closed, null)); 
+    }
+
+
+}
+~~~
+
+#### EventThread
+
+~~~java
+class EventThread extends ZooKeeperThread {
+    // 阻塞队列
+    private final LinkedBlockingQueue<Object> waitingEvents = new LinkedBlockingQueue<Object>();
+    // Event 线程 运行方法
+    @Override 
+    public void run() {
+        try {
+            isRunning = true;
+            while (true) {
+                // 从阻塞队列里取数据
+                Object event = waitingEvents.take();
+                if (event == eventOfDeath) {
+                    wasKilled = true;
+                } else {
+                    // 处理 event
+                    processEvent(event);
+                }
+                if (wasKilled)
+                    synchronized (waitingEvents) {
+                    if (waitingEvents.isEmpty()) {
+                        isRunning = false;
+                        break;
+                    }
+                }
+            }
+        } catch (InterruptedException e) { 
+        } 
+    }
+    // 处理 event
+    private void processEvent(Object event) {
+        try {
+            if (event instanceof WatcherSetEventPair) {
+                // each watcher will process the event
+                WatcherSetEventPair pair = (WatcherSetEventPair) event;
+                for (Watcher watcher : pair.watchers) {
+                    try {
+                        // 调用 process 方法
+                        watcher.process(pair.event);
+                    } catch (Throwable t) { 
+                    }
+                }
+            } else if (event instanceof LocalCallback) {
+                // 省略 ... 
+            } else {
+                // 省略 ...  
+            }
+        } catch (Throwable t) { 
+        }
+    }
+}
+~~~
+
+
+
+
 
 ## Watcher 机制
 
+### WatchedEvent
+
+~~~java
+public class WatchedEvent {	
+    // Zookeeper的状态
+	final private KeeperState keeperState;
+    // 事件类型
+    final private EventType eventType;
+    // 节点路径
+    private String path;
+    // 构造方法
+    public WatchedEvent(EventType eventType, KeeperState keeperState, String path) {
+        this.keeperState = keeperState;
+        this.eventType = eventType;
+        this.path = path;
+    } 
+    // 将 WatcherEvent 修改为 WatchedEvent ,两者是不一样的
+    public WatchedEvent(WatcherEvent eventMessage) {
+        keeperState = KeeperState.fromInt(eventMessage.getState());
+        eventType = EventType.fromInt(eventMessage.getType());
+        path = eventMessage.getPath();
+    }
+}
+~~~
+
+#### KeeperState
+
+KeeperState是一个枚举类，其定义了在事件发生时ZooKeeper所处的各种状态
+
+~~~java
+public enum KeeperState {
+    // 未知状态,不再使用 
+    @Deprecated
+    Unknown (-1),
+	// 断开
+    Disconnected (0), 
+    // 未同步连接,不再使用
+    @Deprecated
+    NoSyncConnected (1),
+    // 同步连接
+    SyncConnected (3),
+	// 认证失败
+    AuthFailed (4),
+    // 只读连接
+    ConnectedReadOnly (5), 
+    // SASL认证通过
+    SaslAuthenticated(6), 
+    // 过期
+    Expired (-112), 
+    // 关闭
+    Closed (7);
+} 
+~~~
+
+#### EventType
+
+EventType是一个枚举类，其定义了事件的类型
+
+~~~java
+public enum EventType {
+    // 无
+    None (-1),
+    // 创建节点
+    NodeCreated (1),
+    // 删除节点
+    NodeDeleted (2),
+    // 节点数据变化
+    NodeDataChanged (3),
+    // 当前节点的子节点变化
+    NodeChildrenChanged (4),
+    // 节点Watch 移除
+    DataWatchRemoved (5),
+    // 子节点Watch 移除
+    ChildWatchRemoved (6);
+}
+~~~
+
+
+
+### ClientWatchManager
+
+客户端的watcher管理器，根据event找到该event的所有观察者，返回需要被通知的Watcher集合
+
+~~~java
+public interface ClientWatchManager { 
+    // 返回需要被通知的Watcher集合
+    public Set<Watcher> materialize(Watcher.Event.KeeperState state,
+        Watcher.Event.EventType type, String path);
+}
+
+static class ZKWatchManager implements ClientWatchManager {
+    // 数据变化的Watchers  
+    private final Map<String, Set<Watcher>> dataWatches = new HashMap<String, Set<Watcher>>();
+    // 节点存在与否的Watchers  
+    private final Map<String, Set<Watcher>> existWatches = new HashMap<String, Set<Watcher>>();
+    // 子节点变化的Watchers 
+    private final Map<String, Set<Watcher>> childWatches = new HashMap<String, Set<Watcher>>();
+    private boolean disableAutoWatchReset;
+    
+    @Override
+    public Set<Watcher> materialize(Watcher.Event.KeeperState state,
+        Watcher.Event.EventType type, String clientPath) {
+        // 需要被通知的Watcher集合
+        Set<Watcher> result = new HashSet<Watcher>();
+
+        switch (type) {
+            // 无类型 全部添加
+            case None:
+                result.add(defaultWatcher);
+                boolean clear = disableAutoWatchReset && state != Watcher.Event.KeeperState.SyncConnected;
+                synchronized(dataWatches) {
+                    for(Set<Watcher> ws: dataWatches.values()) {
+                        result.addAll(ws);
+                    }
+                    if (clear) {
+                        dataWatches.clear();
+                    }
+                } 
+                synchronized(existWatches) {
+                    for(Set<Watcher> ws: existWatches.values()) {
+                        result.addAll(ws);
+                    }
+                    if (clear) {
+                        existWatches.clear();
+                    }
+                } 
+                synchronized(childWatches) {
+                    for(Set<Watcher> ws: childWatches.values()) {
+                        result.addAll(ws);
+                    }
+                    if (clear) {
+                        childWatches.clear();
+                    }
+                }
+
+                return result;
+            // 节点数据变化 和 创建节点
+            case NodeDataChanged:
+            case NodeCreated:
+                // 移除clientPath对应的Watcher, 加入集合
+                synchronized (dataWatches) {
+                    addTo(dataWatches.remove(clientPath), result);
+                }
+                synchronized (existWatches) {
+                    addTo(existWatches.remove(clientPath), result);
+                }
+                break;
+            // 子节点变化
+            case NodeChildrenChanged:
+                synchronized (childWatches) {
+                    addTo(childWatches.remove(clientPath), result);
+                }
+                break;
+            // 删除节点
+            case NodeDeleted:
+                synchronized (dataWatches) {
+                    addTo(dataWatches.remove(clientPath), result);
+                } 
+                synchronized (existWatches) {
+                    Set<Watcher> list = existWatches.remove(clientPath);
+                    if (list != null) {
+                        addTo(list, result);
+                        LOG.warn("We are triggering an exists watch for delete! Shouldn't happen!");
+                    }
+                }
+                synchronized (childWatches) {
+                    addTo(childWatches.remove(clientPath), result);
+                }
+                break;
+            default:
+                String msg = "Unhandled watch event type " + type
+                    + " with state " + state + " on path " + clientPath;
+                LOG.error(msg);
+                throw new RuntimeException(msg);
+        } 
+        // 返回watcher集合
+        return result;
+    }
+    
+}
+~~~
+
+### WatchManager
+
+服务端的watcher管理器
+
+~~~java
+class WatchManager { 
+    // watcher表     路径 -> watcher集合
+    private final HashMap<String, HashSet<Watcher>> watchTable = new HashMap<String, HashSet<Watcher>>();
+	// watcher到节点路径的映射   watcher -> 路径集合
+    private final HashMap<Watcher, HashSet<String>> watch2Paths = new HashMap<Watcher, HashSet<String>>(); 
+}
+~~~
+
+#### addWatch 
+
+向watch2Paths和watchTable添加watcher
+
+~~~java
+synchronized void addWatch(String path, Watcher watcher) {
+    // 根据路径获取对应的 Watcher集合
+    HashSet<Watcher> list = watchTable.get(path);
+    if (list == null) { 
+        // 新建 Watcher 集合
+        list = new HashSet<Watcher>(4);
+        watchTable.put(path, list);
+    }
+    // 将watcher直接添加至 Watcher 集合
+    list.add(watcher);
+    // 通过watcher获取对应的 路径集合
+    HashSet<String> paths = watch2Paths.get(watcher);
+    if (paths == null) { 
+        // 新建 paths 集合
+        paths = new HashSet<String>();
+        watch2Paths.put(watcher, paths);
+    }
+    // 将路径添加至paths集合
+    paths.add(path);
+}
+~~~
+
+#### removeWatcher
+
+从watch2Paths和watchTable中移除该watcher
+
+~~~java
+synchronized void removeWatcher(Watcher watcher) {
+    // 从wach2Paths中移除watcher , 返回watcher对应的path集合
+    HashSet<String> paths = watch2Paths.remove(watcher);
+    if (paths == null) {
+        return;
+    }
+    // 遍历 paths
+    for (String p : paths) {
+        HashSet<Watcher> list = watchTable.get(p);
+        if (list != null) {
+            // 从list中移除该watcher
+            list.remove(watcher);
+            if (list.size() == 0) {
+                watchTable.remove(p);
+            }
+        }
+    }
+}
+~~~
+
+#### triggerWatch
+
+触发watch事件，并对事件进行处理，触发过程中会移除watcher，所以每个watcher只会触发一次
+
+~~~java
+Set<Watcher> triggerWatch(String path, EventType type) {
+    return triggerWatch(path, type, null);
+} 
+Set<Watcher> triggerWatch(String path, EventType type, Set<Watcher> supress) {
+    // 根据事件类型、连接状态、节点路径创建WatchedEvent
+    WatchedEvent e = new WatchedEvent(type, KeeperState.SyncConnected, path);
+    HashSet<Watcher> watchers;
+    synchronized (this) {
+        // 从watchTable中移除path,返回对应的watcher集合
+        watchers = watchTable.remove(path);
+        if (watchers == null || watchers.isEmpty()) { 
+            return null;
+        }
+        // 遍历watcher集合
+        for (Watcher w : watchers) {
+            // 根据watcher和path 从watch2Paths移除对应的路径
+            HashSet<String> paths = watch2Paths.get(w);
+            if (paths != null) {
+                paths.remove(path);
+            }
+        }
+    }
+    // 遍历watcher集合
+    for (Watcher w : watchers) {
+        if (supress != null && supress.contains(w)) {
+            continue;
+        }
+        // 调用process,对watcher进行处理
+        w.process(e);
+    }
+    return watchers;
+}
+~~~
+
+ 
+
+
+
+客户端注册Watcher
+
+
+
+服务器处理Watcher 
+
+
+
+客户端回调Watcher

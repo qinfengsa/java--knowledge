@@ -18,41 +18,45 @@ Spring是一个企业级Java应用开发框架，他能使java开发更简单，
 
 ### 核心容器
 
-**spring-core: **提供了框架的基本组成部分，包括 IOC 和依赖注入功能
+**spring-core**：提供了框架的基本组成部分，包括 IOC 和依赖注入功能
 
-**spring-beans: **提供了核心接口**BeanFactory**，只有一个实现类**DefaultListableBeanFactory**完成了创建Bean的功能，其他实现类都是把委派给DefaultListableBeanFactory实现的
+**spring-beans**：提供了核心接口**BeanFactory**，只有一个实现类**DefaultListableBeanFactory**完成了创建Bean的功能，其他实现类都是把委派给DefaultListableBeanFactory实现的
 
-**spring-context: **在spring-core和spring-beans的基础上，添加了国际化、事件传播、资源加载和透明地创建上下文（比如，通过Servelet容器）等功能；核心接口**ApplicationContext**继承了BeanFactory并进行了扩展
+**spring-context**：在spring-core和spring-beans的基础上，添加了国际化、事件传播、资源加载和透明地创建上下文（比如，通过Servelet容器）等功能；核心接口**ApplicationContext**继承了BeanFactory并进行了扩展
 
-**spring-expression: **提供了强大的表达式语言，用于在运行时查询和操作对象图
+**spring-expression**：提供了强大的表达式语言，用于在运行时查询和操作对象图
 
 ### 数据访问与集成
 
-**spring-jdbc: **
+**spring-jdbc**：Spring 提供的JDBC抽象框架的主要实现模块，用于简化Spring JDBC操作
 
-**spring-orm: **
+**spring-orm**：主要集成Hibernate, Java Persistence API (JPA) 和Java Data Objects (JDO)
 
-**spring-oxm: **
+**spring-oxm**：将Java对象映射成XML数据，或者将XML数据映射成Java对象
 
-**spring-jms: **
+**spring-jms**：Java Messaging Service能够发送和接收信息
 
-**spring-tx: **
+**spring-tx**：Spring JDBC事务控制实现模块
 
 ### Web组件
 
-**spring-web: **
+**spring-web**：提供了最基础Web支持，主要建立于核心容器之上，通过Servlet或者Listeners来初始化IOC容器
 
-**spring-webmvc: **
+**spring-webmvc**：实现了Spring MVC（model-view-Controller）的Web应用
 
-**spring-webflux: **
+**spring-webflux**：一个新的非阻塞函数式Reactive Web 框架，可以用来建立异步的，非阻塞，事件驱动的服务。
 
-**spring-websocket: **
+**spring-websocket**：主要是与Web前端的全双工通讯的协议
 
 ### 测试模块
 
-**spring-test: **
+**spring-test**：为测试提供支持
 
+### AOP
 
+**spring-aop**： 面向切面编程的应用模块，整合Asm，CGLIb、JDKProxy
+
+**spring-aspects**： 集成AspectJ，AOP应用框架（AspectJ是编译期添加代码，原理和lombok一样）
 
 ## Spring IOC
 
@@ -86,28 +90,20 @@ public void refresh() throws BeansException, IllegalStateException {
         try {
             // 提供子类覆盖的额外处理，即子类处理自定义的BeanFactoryPostProcess
             postProcessBeanFactory(beanFactory);
-
             // 激活各种BeanFactory处理器.
             invokeBeanFactoryPostProcessors(beanFactory);
-
             // 注册拦截Bean创建的Bean处理器，即注册 BeanPostProcessor
             registerBeanPostProcessors(beanFactory);
-
             // 初始化信息源，和国际化相关.
             initMessageSource();
-
             // 初始化容器事件传播器.
             initApplicationEventMulticaster();
-
             // 给子类扩展初始化其他Bean
             onRefresh();
-
             // 在所有bean中查找listener bean，然后注册到广播器中
             registerListeners();
-
             // 初始化剩下的单例Bean(非延迟加载的)
             finishBeanFactoryInitialization(beanFactory);
-
             // 完成刷新过程,通知生命周期处理器lifecycleProcessor刷新过程,同时发出ContextRefreshEvent通知
             finishRefresh();
         } catch (BeansException ex) { 
@@ -157,7 +153,7 @@ public void refresh() throws BeansException, IllegalStateException {
 | scope           | 定义bean 的作用域                                            |
 | constructor-arg | 基于构造函数的依赖注入，                                     |
 | properties      | 基于set方法的依赖注入                                        |
-| autowire        | 它是用来注入依赖关系的，并会在接下来的章节中进行讨论。       |
+| autowire        | 自动装配（byName、byType、constructor）                      |
 | lazy-init       | 是否延迟加载                                                 |
 | init-method     | 在 bean 的所有必需的属性被容器设置之后，调用回调方法。       |
 | destroy-method  | 当包含该 bean 的容器被销毁时，回调方法。                     |
@@ -171,6 +167,96 @@ public void refresh() throws BeansException, IllegalStateException {
 | request        | 每次HTTP请求都会创建一个新的Bean，                           |
 | session        | 同一个HTTP Session共享一个Bean，不同Session使用不同的Bean    |
 | global-session | 该属性仅用于HTTP Session，同session作用域不同的是，所有的Session共享一个Bean实例 |
+
+~~~java
+// AbstractBeanFactory中doGetBean方法中关于作用域的判断
+// 单例域，全局只有一个
+if (mbd.isSingleton()) {
+    sharedInstance = getSingleton(beanName, () -> {
+        try {
+            return createBean(beanName, mbd, args);
+        }
+        catch (BeansException ex) {
+            // Explicitly remove instance from singleton cache: It might have been put there
+            // eagerly by the creation process, to allow for circular reference resolution.
+            // Also remove any beans that received a temporary reference to the bean.
+            destroySingleton(beanName);
+            throw ex;
+        }
+    });
+    bean = getObjectForBeanInstance(sharedInstance, name, beanName, mbd);
+}
+// 原型域，每次创建新的
+else if (mbd.isPrototype()) {
+    // It's a prototype -> create a new instance.
+    Object prototypeInstance = null;
+    try {
+        beforePrototypeCreation(beanName);
+        prototypeInstance = createBean(beanName, mbd, args);
+    }
+    finally {
+        afterPrototypeCreation(beanName);
+    }
+    bean = getObjectForBeanInstance(prototypeInstance, name, beanName, mbd);
+}
+// 其他
+else {
+    String scopeName = mbd.getScope();
+    // 维护一个scope列表
+    final Scope scope = this.scopes.get(scopeName);
+    if (scope == null) {
+        throw new IllegalStateException("No Scope registered for scope name '" + scopeName + "'");
+    }
+    try {
+        Object scopedInstance = scope.get(beanName, () -> {
+            beforePrototypeCreation(beanName);
+            try {
+                return createBean(beanName, mbd, args);
+            }
+            finally {
+                afterPrototypeCreation(beanName);
+            }
+        });
+        bean = getObjectForBeanInstance(scopedInstance, name, beanName, mbd);
+    }
+    catch (IllegalStateException ex) {
+        throw new BeanCreationException(beanName,
+        "Scope '" + scopeName + "' is not active for the current thread; consider " +
+        "defining a scoped proxy for this bean if you intend to refer to it from a singleton",ex);
+    }
+}
+
+// scope 类
+public class SimpleThreadScope implements Scope {
+
+	private static final Log logger = LogFactory.getLog(SimpleThreadScope.class);
+	// 其实内部维护的ThreadLocal缓存
+	private final ThreadLocal<Map<String, Object>> threadScope =
+			new NamedThreadLocal<Map<String, Object>>("SimpleThreadScope") {
+				@Override
+				protected Map<String, Object> initialValue() {
+					return new HashMap<>();
+				}
+			};
+
+
+	@Override
+	public Object get(String name, ObjectFactory<?> objectFactory) {
+        // 获取scope缓存
+		Map<String, Object> scope = this.threadScope.get();
+		Object scopedObject = scope.get(name);
+		if (scopedObject == null) {
+			scopedObject = objectFactory.getObject();
+			scope.put(name, scopedObject);
+		}
+		return scopedObject;
+	}
+}
+~~~
+
+
+
+
 
 Bean的生命周期可以表达为：Bean的定义——Bean的初始化——Bean的使用——Bean的销毁 
 
@@ -309,7 +395,7 @@ public abstract class AbstractRefreshableConfigApplicationContext
 
 ### 加载阶段
 
-解析配置信息，然后装载BeanDefinition
+解析配置信息，然后装载BeanDefinition，每一个 `<bean>` 都对应着一个BeanDefinition对象
 
 ~~~java
 public abstract class AbstractRefreshableApplicationContext extends AbstractApplicationContext {
@@ -426,7 +512,7 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 
 ### 注册阶段
 
-把配置文件读取到内存中只会，需要将BeanDefinition注册到IOC容器中
+把配置文件读取到内存中之后，需要将BeanDefinition注册到容器beanDefinitionMap中，使用ConcurrentHashMap存储
 
 ~~~java
 public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {	
@@ -1591,7 +1677,7 @@ class BeanDefinitionValueResolver {
 
 Spring 的AOP 是通过接入BeanPostProcessor 后置处理器开始的；BeanPostProcessor 是Bean 后置处理器，允许在调用初始化方法前后对 Bean 进行增强处理；
 
-**创建代理对象**
+### **创建代理对象**
 
 在initializeBean方法中调用applyBeanPostProcessorsAfterInitialization方法，处理BeanPostProcessor接口的后置方法；
 
@@ -1711,7 +1797,7 @@ public class DefaultAopProxyFactory implements AopProxyFactory, Serializable {
 }
 ~~~
 
-**调用阶段**
+### **调用阶段**
 
 以JDK动态代理JdkDynamicAopProxy为例调用
 
@@ -1809,6 +1895,32 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 
 ## Spring MVC
 
+M: Model；V: View；C: Controller ->DispatcherServlet(通过 DispatcherServlet 进行处理)
+
+**流程说明**：
+
+（1）客户端（浏览器）发送请求，直接请求到 DispatcherServlet。
+
+（2）DispatcherServlet 根据请求信息调用 HandlerMapping，解析请求对应的 Handler。
+
+（3）解析到对应的 Handler（也就是我们平常说的 Controller 控制器）后，开始由 HandlerAdapter 适配器处理。
+
+（4）HandlerAdapter 会根据 Handler 来调用真正的处理器开处理请求，并处理相应的业务逻辑。
+
+（5）处理器处理完业务后，会返回一个 ModelAndView 对象，Model 是返回的数据对象，View 是个逻辑上的 View。
+
+（6）ViewResolver 会根据逻辑 View 查找实际的 View。
+
+（7）DispaterServlet 把返回的 Model 传给 View（视图渲染）。
+
+（8）把 View 返回给请求者（浏览器）
+
+### 视图技术
+
+
+
+### 国际化
+
 
 
 ## Spring扩展接口分析
@@ -1824,14 +1936,14 @@ private void invokeAwareMethods(final String beanName, final Object bean) {
         if (bean instanceof BeanNameAware) { 
             ((BeanNameAware) bean).setBeanName(beanName);
         }
-         // 实现 BeanClassLoaderAware 接口，会执行 setBeanClassLoader
+        // 实现 BeanClassLoaderAware 接口，会执行 setBeanClassLoader
         if (bean instanceof BeanClassLoaderAware) {
             ClassLoader bcl = getBeanClassLoader();
             if (bcl != null) {
                 ((BeanClassLoaderAware) bean).setBeanClassLoader(bcl);
             }
         }
-         // 实现 BeanFactoryAware 接口，会执行 setBeanFactory
+        // 实现 BeanFactoryAware 接口，会执行 setBeanFactory
         if (bean instanceof BeanFactoryAware) {
             ((BeanFactoryAware) bean).setBeanFactory(AbstractAutowireCapableBeanFactory.this);
         }

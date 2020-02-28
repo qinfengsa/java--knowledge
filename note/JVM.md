@@ -6,7 +6,7 @@
 
 程序计数器（ProgramCounter），也叫PC寄存器，每个Java虚拟机线程都有自己的程序计数器，会记录正在执行的字节码指令的地址或者行号（如果执行的是Native方法，则为undefined）
 
-**程序计数器主要有两个作用：**
+**程序计数器主要有两个作用**: 
 
 1. 字节码解释器通过改变程序计数器来依次读取指令，从而实现代码的流程控制，如：顺序执行、选择、循环、异常处理。
 2. 在多线程的情况下，程序计数器用于记录当前线程执行的位置，当线程被切换回来时能够知道该线程上次运行到哪里。
@@ -17,14 +17,14 @@
 
 用来存储当前线程运行方法所需要的数据、指令、返回地址（栈帧）
 
-可以通过-Xss 这个虚拟机参数来指定每个线程的Java 虚拟机栈内存大小，在JDK 1.4 中默认为256K，而在JDK1.5+ 默认为1M：-Xss2M 
+可以通过-Xss 这个虚拟机参数来指定每个线程的Java 虚拟机栈内存大小，-Xss2M；在JDK 1.4 中默认为256K，而在JDK1.5+ 默认为1M；
 
 异常： 
 
 1. 线程请求分配的栈容量超过Java虚拟机栈的最大容量时，会抛出StackOverﬂowError 异常；一般无限递归会出现这个错误
 2. 如果Java虚拟机栈可以动态扩展，并且动态扩展时没有申请到足够的内存；或者创建新的线程时没有足够的内存去创建一个新的Java虚拟机栈，或抛出OutOfMemoryError
 
-这里顺带提一下，很多人在做多线程开发时，当创建很多线程时，容易出现OOM(OutOfMemoryError),这时可以通过具体情况，减少最大堆容量，或者栈容量来解决问题，这是为什么呢。请看下面的公式:
+在做多线程开发时，当创建很多线程时，容易出现OOM(OutOfMemoryError)，这时可以通过具体情况，减少最大堆容量，或者栈容量来解决问题，如下:
 
 **线程数\*(最大栈容量)+最大堆值+其他内存(忽略不计或者一般不改动)=机器最大内存**
 
@@ -50,7 +50,7 @@ Java虚拟机中，堆是所有线程共享的内存区域，所有类实例对�
 
 ### 运行时常量池
 
-在class字节码文件中，java会把所有需要使用的数据和方法提取出来，然后运行的时候放入常量池
+在class字节码文件中，Java会把所有需要使用的数据和方法提取出来，然后运行的时候放入常量池
 
 运行时常量池是方法区的一部分，用于存储编译器生成的各种字面量和符号引用；
 
@@ -82,7 +82,7 @@ Java虚拟机中，堆是所有线程共享的内存区域，所有类实例对�
 
 一个方法开始执行，有两种方式退出这个方法，一种是执行引擎遇到返回指令，另一种是执行过程中遇到了异常
 
-## JAVA对象
+## Java对象
 
 ### 对象的创建
 
@@ -90,23 +90,23 @@ Java虚拟机中，堆是所有线程共享的内存区域，所有类实例对�
 
 2. **分配内存**：类加载完成后，通过类对象获取到类信息，可以确定类所需的内存大小；然后分配所需的内存
 
-   内存分配的两种方式：**指针碰撞和空闲列表**
+   内存分配的两种方式**: 指针碰撞和空闲列表**
 
 3. **初始化零值**：内存分配完成后，虚拟机需要将分配到的内存空间都初始化为零值
 
 4. **设置对象头**：初始化零值完成之后，**虚拟机要对对象进行必要的设置**，例如对象的哈希码、对象的 GC 分代年龄等信息。 **这些信息存放在对象头中。** 另外，根据虚拟机当前运行状态的不同，如是否启用偏向锁等，对象头会有不同的设置方式。
 
-5. **执行init方法**：
+5. **执行init方法**：执行构造方法，为变量赋值
 
 ### 对象的访问定位
 
-java运行过程中通过栈上的对象引用地址来访问对应的对象；存在两种方式：**使用句柄和直接指针**
+Java运行过程中通过栈上的对象引用地址来访问对应的对象；存在两种方式**: 使用句柄和直接指针**
 
-**句柄：**使用句柄的话，那么 Java 堆中将会划分出一块内存来作为句柄池，reference 中存储的就是对象的句柄地址，而句柄中包含了对象实例数据与类型数据各自的具体地址信息；需要跳转两次访问对象
+**句柄**：使用句柄的话，那么 Java 堆中将会划分出一块内存来作为句柄池，reference 中存储的就是对象的句柄地址，而句柄中包含了对象实例数据与类型数据各自的具体地址信息；需要跳转两次访问对象
 
 ![img](img/句柄.png)
 
-**直接指针：** 如果使用直接指针访问，那么 Java 堆对象的布局中就必须考虑如何放置访问类型数据的相关信息，而 reference 中存储的直接就是对象的地址。GC中的复制算法，标记整理都需要考虑对象引用的修改
+**直接指针**:  如果使用直接指针访问，那么 Java 堆对象的布局中就必须考虑如何放置访问类型数据的相关信息，而 reference 中存储的直接就是对象的地址。GC中的复制算法，标记整理都需要考虑对象引用的修改
 
 ![直接引用](img/直接引用.png)
 
@@ -114,7 +114,7 @@ java运行过程中通过栈上的对象引用地址来访问对应的对象；�
 
 ## 垃圾回收
 
-垃圾回收主要针对堆和方法区，程序计数器、虚拟机栈和本地方法栈属于线程私有，线程结束之后就会消失
+垃圾回收主要针对堆和方法区；程序计数器、虚拟机栈和本地方法栈属于线程私有，线程结束之后就会消失
 
 ### 判断一个对象是否可以被回收
 
@@ -183,7 +183,7 @@ java运行过程中通过栈上的对象引用地址来访问对应的对象；�
   又称为幽灵引用或者幻影引用，一个对象是否有虚引用的存在，不会对其生存时间造成影响，也无法通过虚引用得到一个对象。为一个对象设置虚引用的唯一目的是能在这个**对象被回收时收到一个系统通知**。
 
   ```java
-   ReferenceQueue<Object> queue = new ReferenceQueue<>();
+  ReferenceQueue<Object> queue = new ReferenceQueue<>();
   Object obj = new Object();
   PhantomReference<Object> pf = new PhantomReference<Object>(obj, queue);
   obj = null;
@@ -297,15 +297,27 @@ G1（Garbage-First） 把堆划分成多个固定大小的独立区域（Region�
 
 ![img](img/G1HeapAllocation.png)
 
-通过引入 Region 的概念，从而将原来的一整块内存空间划分成多个的小空间，使得每个小空间可以单独进行垃圾回收。这种划分方法带来了很大的灵活性，使得可预测的停顿时间模型成为可能。通过记录每个 Region 垃圾回收时间以及回收所获得的空间（这两个值是通过过去回收的经验获得），并维护一个优先列表，每次根据允许的收集时间，优先回收价值最大的 Region。
+通过引入 Region 的概念，从而将原来的一整块内存空间划分成多个 （默认2000多个）大小相同的小空间（Region） ，使得每个小空间可以单独进行垃圾回收。这种划分方法带来了很大的灵活性，使得可预测的停顿时间模型成为可能。通过记录每个 Region 垃圾回收时间以及回收所获得的空间（这两个值是通过过去回收的经验获得），并维护一个优先列表，每次根据允许的收集时间，优先回收价值最大的 Region。
 
-每个 Region 都有一个 Remembered Set，用来记录该 Region 对象的引用对象所在的 Region。通过使用 Remembered Set，在做可达性分析的时候就可以避免全堆扫描。
+**RSet**
+
+每个 Region 都有一个 Remembered Set (RSet)，用来记录并跟踪其它Region执行该Region中对象的引用 （类似反向指针），通过使用 Remembered Set，可以确定引用本分区内的对象是否存活，在做可达性分析的时候就可以避免全堆扫描。
+
+事实上，并非所有的引用都需要记录在RSet中，如果一个分区确定需要GC Root扫描，那么无需RSet也可以无遗漏的得到引用关系。那么引用源自本分区的对象，当然不用落入RSet中；同时，G1 GC每次都会对年轻代进行整体收集，因此引用源自年轻代的对象，也不需要在RSet中记录。最后只有老年代的分区可能会有RSet记录。
+
+> ![img](img/RSet.png)
+>
+>  如图： Region1和Region3中有对象引用了Region2的对象，则在Region2的Rset中记录了这些引用。 [引用来源](https://www.jianshu.com/p/870abddaba41)
+
+**Young GC**: 
+
+**Mixed GC**: 
 
 G1的收集过程**可能**有4个阶段：
 
 1.新生代GC；2.并发标记周期；3.混合收集；4.如果需要，可能会进行Full GC
 
-**新生代 GC：**
+**新生代 GC**：
 
 - 堆一整块内存空间，被分为多个heap区(regions).
 - 新生代内存由一组不连续的heap区组成。这使得在需要时很容易进行容量调整.
@@ -313,18 +325,18 @@ G1的收集过程**可能**有4个阶段：
 - 新生代 GC 通过多线程并行进行.
 - 存活的对象被拷贝到新的 survivor 区或者老年代.
 
-**并发标记周期：**
+**并发标记周期**: 
 
 G1 收集器：
 
 - **初始标记**：标记GC Roots 能直接关联到的对象，这个阶段会伴随着一次young GC，需要停顿（STW）
 - **根分区扫描 **：由于初始标记必然会伴随一次young GC，所以在初始化标记后，eden被清空，并且存活对象被移入 survivor区；在这个阶段，将扫描survivor区直接可达的老年代区域，并标记这些直接可达的对象。这个过程可以和应用程序并发执行。但是根区域扫描不能和young GC同时执行(因为根区域扫描依赖 survivor区的对象，而young GC会修改这个区域)，因此如果恰巧在此时需要进行young GC，GC就需要等待根区域扫描结束后才能进行，如果发生这种情况，这次新生代GC的时间就会延长。
 - **并发标记**：和CMS类似，并发标记会扫描并查找整个堆的存活对象，并做好标记。这是一个并发的过程，并且可以被新一次的young GC打断
-- **重新标记**：和CMS一样，重新标记也是会STW。由于在并发标记过程中，应用程序依然在运行，因此标记结果可能需要进行修正，所以在此阶段对上一次的标记结果进行补充。在G1中，这个过程使用SATB( Snapshot-At-The- Beginning)算法完成，该算法会在标记之初为存活对象创建一个快照，这个快照有助于加速重新标记的速度。会比CMS快很多
+- **最终标记**：和CMS一样，重新标记也是会STW。由于在并发标记过程中，应用程序依然在运行，因此标记结果可能需要进行修正，所以在此阶段对上一次的标记结果进行补充。在G1中，这个过程使用SATB( Snapshot-At-The- Beginning)算法完成，该算法会在标记之初为存活对象创建一个快照，这个快照有助于加速重新标记的速度。会比CMS快很多
 - **独占清理**：这个阶段是会STW，它将计算各个区域的存活对象和GC回收比例并进行排序，识别可供混合回收的区域，在这个阶段，还会更新记忆集( Remebered Set)。该阶段给出了需要被混合回收的区域并进行了标记，在混合回收阶段，需要这些信息。
 - **并发清理阶段**：这个阶段会识别并清理完全空闲的区域。它是并发的清理，不会引起停顿。
 
-**混合收集：**
+**混合收集**: 
 
 在并发标记周期中，虽然有部分对象被回收，但是总体上说，回收的比例是相当低的。但是在并发标记周期后，G1已经明确知道哪些区域含有比较多的垃圾对象，在混合回收阶段，就可以专门针对这些区域进行回收。当然，G1会优先回收垃圾比例较高的区域，因为回收这些区域的性价比也比较高。而这也正是G1名字的由来。
 
@@ -344,17 +356,13 @@ G1在以下场景中会触发Full GC，同时会在日志中记录to-space-exhau
 
 由于G1的应用场合往往堆内存都比较大，所以Full GC的收集代价非常昂贵，应该避免Full GC的发生。 
 
-**G1收集器特点：**
+**G1收集器特点**: 
 
 - **并行性：**G1在回收期间，可以由多个GC线程同时工作，有效利用多核CPU的计算能力
 - **并发性：**G1拥有与应用程序交替执行的能力，部分工作可以和应用程序同时执行，不会在整个回收期间STW
 - **分代GC：**G1依然是一个分代收集器，但是与其它收集器不同，G1同时兼顾新生代和老年代
 - **空间整理：**G1在回收过程中，会进行适当的对象移动，不像CMS只是简单的标记清除，在若干次GC后，CMS必须进行一次碎片整理；G1不同，它每次回收都会有效的复制对象，减少空间碎片
-- **可预见性：**由于分区的原因，G1可以选择部分区域进行内存回收，缩小回收范围，从而控制全局停顿STW
-
-**gc日志**
-
-
+- **可预见性**: 由于分区的原因，G1可以选择部分区域进行内存回收，缩小回收范围，从而控制全局停顿STW
 
 ## 内存分配和回收策略
 
@@ -417,7 +425,7 @@ Minor GC只要Eden区空间不足就会触发
    REF_getStatic, REF_putStatic, REF_invokeStatic 的方法句柄，并且这个方法句柄所对应的类没有进行过初始
    化，则需要先触发其初始化；
 
-**被动引用（类不会初始化）：**
+**被动引用（类不会初始化）**: 
 
 - 通过子类引用父类的静态字段，子类不会初始化
 - 通过数组定义的引用类，不会初始化；
@@ -457,7 +465,7 @@ Minor GC只要Eden区空间不足就会触发
 
    将常量池中的符合引用替换为直接引用；解析动作主要针对类或接口、字段、类方法、接口方法、方法类型、方法句柄和调用限定符7类符号引用进行。
 
-   符号引用：在编译时，java类并不知道所引用的类的实际地址，因此只能使用符号引用来代替
+   符号引用：在编译时，Java类并不知道所引用的类的实际地址，因此只能使用符号引用来代替
 
    直接引用：
 
@@ -469,9 +477,9 @@ Minor GC只要Eden区空间不足就会触发
 
 5. **初始化**
 
-   初始化阶段才开始真正执行类中定义的java代码；初始化阶段是执行类类构造器<client>()；不是类的构造方法（实例化才执行）
+   初始化阶段才开始真正执行类中定义的Java代码；初始化阶段是执行类类构造器\<client>()；不是类的构造方法（实例化才执行）
    
-   <client>()方法是编译器自动收集所有类变量（static变量）的赋值操作和静态代码块（static{}）中的语句按先后顺序合并产生的；类变量访问前必须先声明
+   \<client>()方法是编译器自动收集所有类变量（static变量）的赋值操作和静态代码块（static{}）中的语句按先后顺序合并产生的；类变量访问前必须先声明
    
    ```java
    static {    
@@ -529,15 +537,15 @@ public class ClassLoadTest {
 
 ### 类加载器分类
 
-java的程序入口：sun.misc.Launcher
+Java的程序入口：sun.misc.Launcher
 
-**启动类加载器（Bootstrap ClassLoader）：**负责<JAVA_HOME>/lib下或者-Xbootclasspath参数指定的路径下，并且是虚拟机识别的（仅按照文件名识别，如rt.jar，名字不符合的类库即使放在lib目录中也不会被加载）；如果文件名不被虚拟机识别，即使把jar包丢到lib目录下也是没有作用的（出于安全考虑，Bootstrap启动类加载器只加载包名为java、javax、sun等开头的类）。
+**启动类加载器（Bootstrap ClassLoader）**: 负责<JAVA_HOME>/lib下或者-Xbootclasspath参数指定的路径下，并且是虚拟机识别的（仅按照文件名识别，如rt.jar，名字不符合的类库即使放在lib目录中也不会被加载）；如果文件名不被虚拟机识别，即使把jar包丢到lib目录下也是没有作用的（出于安全考虑，Bootstrap启动类加载器只加载包名为java、javax、sun等开头的类）。
 
-**扩展类加载器（Extension ClassLoader）：**这个类加载器是由
+**扩展类加载器（Extension ClassLoader）**: 这个类加载器是由
 ExtClassLoader（sun.misc.Launcher$ExtClassLoader）实现的。它负责将<JAVA_HOME>/lib/ext 或者被
 java.ext.dir 系统变量所指定路径中的所有类库加载到内存中，开发者可以直接使用扩展类加载器。
 
-**应用程序类加载器（Application ClassLoader）：**这个类加载器是由
+**应用程序类加载器（Application ClassLoader）**: 这个类加载器是由
 AppClassLoader（sun.misc.Launcher$AppClassLoader）实现的。由于这个类加载器是ClassLoader 中的
 getSystemClassLoader() 方法的返回值，因此一般称为系统类加载器。它负责加载用户类路径（ClassPath）
 上所指定的类库，开发者可以直接使用这个类加载器，如果应用程序中没有自定义过自己的类加载器，一般情
@@ -549,16 +557,13 @@ getSystemClassLoader() 方法的返回值，因此一般称为系统类加载器
 
 除了启动类加载器，每个类加载器都有自己的父类加载器，这里类加载器的父子关系一般不会以继承来实现。而是使用组合关系来复用父加载器的代码
 
-**工作过程：**如果一个类加载器收到了类加载的请求，会优先把请求委派给自己的父类加载器，只有当父类加载器反馈无法完成加载请求时，子加载器才会尝试加载类。
+**工作过程**: 如果一个类加载器收到了类加载的请求，会优先把请求委派给自己的父类加载器，只有当父类加载器反馈无法完成加载请求时，子加载器才会尝试加载类。
 
-**优点：**使用双亲委派模型来组织类加载器的关系，可以使Java类随着它的类加载器一起具备了一种带有优先级的层次关系；
+**优点**: 使用双亲委派模型来组织类加载器的关系，可以使Java类随着它的类加载器一起具备了一种带有优先级的层次关系；
 
-例如java.lang.Object 存放在rt.jar 中，如果编写另外一个java.lang.Object 并放到ClassPath 中，程序可以编译通
-过。由于双亲委派模型的存在，所以在rt.jar 中的Object 比在ClassPath 中的Object 优先级更高，这是因为rt.jar
-中的Object 使用的是启动类加载器，而ClassPath 中的Object 使用的是应用程序类加载器。rt.jar 中的Object 优
-先级更高，那么程序中所有的Object 都是这个Object。
+例如java.lang.Object 存放在rt.jar 中，如果编写另外一个java.lang.Object 并放到ClassPath 中，程序可以编译通过。由于双亲委派模型的存在，所以在rt.jar 中的Object 比在ClassPath 中的Object 优先级更高，这是因为rt.jar中的Object 使用的是启动类加载器，而ClassPath 中的Object 使用的是应用程序类加载器。rt.jar 中的Object 优先级更高，那么程序中所有的Object 都是这个Object。
 
-**实现：**
+**实现**: 
 
 ~~~java
 protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException{
@@ -600,4 +605,149 @@ protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundE
 ### 破坏双亲委派模型
 
 重写loadClass（）方法可以破坏双亲委派模型，目前已经不提倡重写这个方法，需要重写findClass（）
+
+**JNDI破坏双亲委派模型**  
+
+JNDI是Java标准服务，它的代码由启动类加载器去加载。但是JNDI需要回调独立厂商实现的代码，而类加载器无法识别这些回调代码（SPI）。 为了解决这个问题，引入了一个**线程上下文类加载器。** 可通过Thread.setContextClassLoader()设置。 利用线程上下文类加载器去加载所需要的SPI代码，即父类加载器请求子类加载器去完成类加载的过程，而破坏了双亲委派模型。 
+
+~~~java
+// 建立连接，通过SPI机制自动找到com.mysql.cj.jdbc.Driver
+// DriverManager在rt.jar目录下，类加载器是启动类加载器，
+// 按照双亲委派机制，是无法加载com.mysql.cj.jdbc.Driver类
+connection = DriverManager.getConnection(url,name,password);
+
+public class DriverManager {
+    // 静态代码块
+    static {
+        loadInitialDrivers(); // 加载所有java.sql.Driver的实现类
+        println("JDBC DriverManager initialized");
+    }
+    private static void loadInitialDrivers() {
+        String drivers;
+        try {
+            drivers = AccessController.doPrivileged(new PrivilegedAction<String>() {
+                public String run() {
+                    return System.getProperty("jdbc.drivers");
+                }
+            });
+        } catch (Exception ex) {
+            drivers = null;
+        } 
+
+        AccessController.doPrivileged(new PrivilegedAction<Void>() {
+            public Void run() {
+				// SPI 机制
+                ServiceLoader<Driver> loadedDrivers = ServiceLoader.load(Driver.class);
+                Iterator<Driver> driversIterator = loadedDrivers.iterator();
+ 
+                try{
+                    while(driversIterator.hasNext()) {
+                        driversIterator.next();
+                    }
+                } catch(Throwable t) {
+                // Do nothing
+                }
+                return null;
+            }
+        });
+
+        println("DriverManager.initialize: jdbc.drivers = " + drivers);
+
+        if (drivers == null || drivers.equals("")) {
+            return;
+        }
+        String[] driversList = drivers.split(":");
+        println("number of Drivers:" + driversList.length);
+        for (String aDriver : driversList) {
+            try {
+                println("DriverManager.Initialize: loading " + aDriver);
+                Class.forName(aDriver, true,
+                        ClassLoader.getSystemClassLoader());
+            } catch (Exception ex) {
+                println("DriverManager.Initialize: load failed: " + ex);
+            }
+        }
+    }
+    // 建立连接
+    private static Connection getConnection(
+        String url, java.util.Properties info, Class<?> caller) throws SQLException {
+        // callerCL为空的时候，其实说明这个ClassLoader是启动类加载器，但是这个启动类加载并不能识别rt.jar之外的类，
+        // 这个时候就把callerCL赋值为Thread.currentThread().getContextClassLoader();也就是应用程序启动类
+        ClassLoader callerCL = caller != null ? caller.getClassLoader() : null;
+        synchronized(DriverManager.class) {
+            // synchronize loading of the correct classloader.
+            if (callerCL == null) {
+                callerCL = Thread.currentThread().getContextClassLoader();
+            }
+        }
+
+        if(url == null) {
+            throw new SQLException("The url cannot be null", "08001");
+        }
+
+        println("DriverManager.getConnection(\"" + url + "\")");
+
+        // Walk through the loaded registeredDrivers attempting to make a connection.
+        // Remember the first exception that gets raised so we can reraise it.
+        SQLException reason = null;
+
+        for(DriverInfo aDriver : registeredDrivers) {
+            // If the caller does not have permission to load the driver then
+            // skip it.
+            // 类加载
+            if(isDriverAllowed(aDriver.driver, callerCL)) {
+                try {
+                    println("    trying " + aDriver.driver.getClass().getName());
+                    Connection con = aDriver.driver.connect(url, info);
+                    if (con != null) {
+                        // Success!
+                        println("getConnection returning " + aDriver.driver.getClass().getName());
+                        return (con);
+                    }
+                } catch (SQLException ex) {
+                    if (reason == null) {
+                        reason = ex;
+                    }
+                }
+
+            } else {
+                println("    skipping: " + aDriver.getClass().getName());
+            } 
+        }
+
+        // if we got here nobody could connect.
+        if (reason != null)    {
+            println("getConnection failed: " + reason);
+            throw reason;
+        }
+
+        println("getConnection: no suitable driver found for "+ url);
+        throw new SQLException("No suitable driver found for "+ url, "08001");
+    }
+    // 
+    private static boolean isDriverAllowed(Driver driver, ClassLoader classLoader) {
+        boolean result = false;
+        if(driver != null) {
+            Class<?> aClass = null;
+            try {
+                aClass =  Class.forName(driver.getClass().getName(), true, classLoader);
+            } catch (Exception ex) {
+                result = false;
+            }
+
+            result = ( aClass == driver.getClass() ) ? true : false;
+        }
+
+        return result;
+    }
+}
+
+~~~
+
+## 参考
+
+* [ Java学习+面试指南 ](https://github.com/Snailclimb/JavaGuide)
+* [Java 提高篇](http://cmsblogs.com/?p=3740)
+* [CS-Notes  技术面试必备 ](https://github.com/CyC2018/CS-Notes)
+* [JVM源码分析系列](https://www.jianshu.com/p/2394abce3f03)
 
