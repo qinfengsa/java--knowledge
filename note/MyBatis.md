@@ -1,6 +1,6 @@
 ## MyBatis 整体架构
 
-![mybatis-frame](../img/mybatis-frame.png)
+![mybatis-frame](img/mybatis-frame.png)
 
 **反射模块**：对Java原生的反射进行了良好的封装，提供了更加简洁的API，对反射操作进行了优化
 
@@ -1043,7 +1043,7 @@ public class Configuration {
 }
 ~~~
 
-![Configuration](../img/Configuration.png)
+![Configuration](img/Configuration.png)
 
 ## XML映射
 
@@ -1431,7 +1431,7 @@ public interface Executor {
 }
 ~~~
 
-![MyBatis-Executor](../img/MyBatis-Executor.png)
+![MyBatis-Executor](img/MyBatis-Executor.png)
 
 ### BaseExecutor
 
