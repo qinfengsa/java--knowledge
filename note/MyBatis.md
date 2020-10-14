@@ -1829,7 +1829,7 @@ public StatementHandler newStatementHandler(Executor executor, MappedStatement m
 }
 ~~~
 
-遍历插件
+### 遍历插件
 
 ~~~java
 public Object pluginAll(Object target) {
@@ -1852,7 +1852,7 @@ public interface Interceptor {
 }
 ~~~
 
-创建代理
+### 创建代理
 
 ~~~java
 public class Plugin implements InvocationHandler {
@@ -1906,7 +1906,7 @@ public class Plugin implements InvocationHandler {
 
 
 
-
+## Spring集成
 
 
 

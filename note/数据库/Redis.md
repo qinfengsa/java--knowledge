@@ -146,9 +146,9 @@ SDS 的特点：
 
 **embstr 和raw 的区别？**
 
-![redis-embstr](img/redis-embstr.png)
+![redis-embstr](../img/redis-embstr.png)
 
-![redis-raw](img/redis-raw.png)
+![redis-raw](../img/redis-raw.png)
 
 embstr 的使用只分配一次内存空间（因为RedisObject 和SDS 是连续的），而raw需要分配两次内存空间（分别为RedisObject 和SDS 分配空间）；
 
@@ -194,7 +194,7 @@ Redis 的Hash 本身也是一个K-V 的结构，类似于Java 中的HashMap；�
 
 **ziplist**: ziplist是一个经过特殊编码的双向链表，它的设计目标就是为了提高存储效率。ziplist可以用于存储字符串或整数，其中整数是按真正的二进制表示进行编码的，而不是编码成字符串序列。
 
-![Redis ziplist数据结构](img/ziplist-structure.png)
+![Redis ziplist数据结构](../img/ziplist-structure.png)
 
 - zlbytes：占4个字节，记录整个压缩列表占用的内存字节数。
 - zltail：占4个字节，记录压缩列表尾节点entryN距离压缩列表的起始地址的字节数。
@@ -268,7 +268,7 @@ typedef struct dict {
 
 **dict结构图**
 
-![img](img/dict-structure.png)
+![img](../img/dict-structure.png)
 
 **为什么要定义两个哈希表？**ht[2]
 
@@ -327,7 +327,7 @@ typedef struct quicklist {
 } quicklist;
 ~~~
 
-![quicklist](img/quicklist-structure.png)
+![quicklist](../img/quicklist-structure.png)
 
 **应用场景**
 
@@ -407,7 +407,7 @@ typedef struct zset {
 } zset;
 ~~~
 
-![img](img/skiplist-structure.png)
+![img](../img/skiplist-structure.png)
 
 **应用场景**
 
@@ -736,8 +736,8 @@ Redis集群为了保证高可用，避免单点问题，需要一个机制保证
 
 **故障转移**：如果master 被标记为下线，就会开始故障转移流程。
 
-故障转移流程的第一步就是在Sentinel 集群选择一个Leader，由Leader 完成故障转移流程。Sentinle 通过Raft 算法，实现Sentinel 选举。
-**Raft 算法**：先到先得，少数服从多数。[算法演示](http://thesecretlivesofdata.com/raft/)
+故障转移流程的第一步就是在Sentinel 集群选择一个Leader，由Leader 完成故障转移流程。Sentinel 通过Raft 算法，实现Sentinel 选举。
+**Raft 算法**：[算法演示](http://thesecretlivesofdata.com/raft/)
 
 **如何选择master**
 

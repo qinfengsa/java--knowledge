@@ -362,7 +362,7 @@ private Object parsePointcutProperty(Element element, ParserContext parserContex
 </aop:config>
 ~~~
 
-解析切面
+**解析切面**
 
 ~~~java
 private void parseAspect(Element aspectElement, ParserContext parserContext) {
@@ -443,7 +443,7 @@ DeclareParents可以用来给被代理对象添加一些方法
 </aop:config>
 ~~~
 
-解析
+**解析**
 
 ~~~java
 private AbstractBeanDefinition parseDeclareParents(Element declareParentsElement, 
@@ -641,6 +641,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
         // 自定义TargetSource,只能扩展
 		TargetSource targetSource = getCustomTargetSource(beanClass, beanName);
         // 对于自定义的TargetSource,Spring会立即执行代理子类的创建
+        // 阻止目标bean的不必要的默认实例化
 		if (targetSource != null) {
 			if (StringUtils.hasLength(beanName)) {
 				this.targetSourcedBeans.add(beanName);
@@ -688,7 +689,26 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 #### 创建代理
 
 ~~~java
-
+public class DefaultAopProxyFactory implements AopProxyFactory, Serializable {
+	@Override
+	public AopProxy createAopProxy(AdvisedSupport config) throws AopConfigException {
+		// config aop参数
+		if (config.isOptimize() || config.isProxyTargetClass() || hasNoUserSuppliedProxyInterfaces(config)) {
+			Class<?> targetClass = config.getTargetClass();
+			if (targetClass == null) {
+				throw new AopConfigException("TargetSource cannot determine target class: " +
+						"Either an interface or a target is required for proxy creation.");
+			}
+			// 目标Class是接口，或者是代理类 JDK动态代理
+			if (targetClass.isInterface() || Proxy.isProxyClass(targetClass)) {
+				return new JdkDynamicAopProxy(config);
+			}
+			return new ObjenesisCglibAopProxy(config);
+		} else {
+			return new JdkDynamicAopProxy(config);
+		}
+	}
+}
 ~~~
 
 
@@ -719,7 +739,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 }
 ~~~
 
-
+#### wrapIfNecessary
 
 ~~~Java
 public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
@@ -925,8 +945,6 @@ public abstract class AopUtils {
 ~~~
 
 ###### 是否符合规则
-
-###### 
 
 ~~~java
 public abstract class AopUtils {

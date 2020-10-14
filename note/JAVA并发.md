@@ -534,6 +534,8 @@ public abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchron
 
 ![1559525875439](img/AQS.png)
 
+#### Node
+
 内部类，同步队列中的结点
 
 ```java
@@ -1024,6 +1026,10 @@ static final class ThreadLocalHoldCounter
 }
 ```
 
+### StampedLock
+
+**StampedLock**是Java 8新增的一个读写锁，它是对ReentrantReadWriteLock的改进
+
 ### Condition接口
 
 任意一个Java对象，都拥有一组监视器方法（定义在java.lang.Object上），主要包括wait()、wait(long timeout)、notify()以及notifyAll()方法，这些方法与synchronized同步关键字配合，可以实现等待/通知模式。**Condition接口也提供了类似Object的监视器方法，与Lock配合可以实现等待/通知模式**
@@ -1490,145 +1496,6 @@ public List<Runnable> shutdownNow() {
     return tasks;
 }
 ```
-
-## ThreadLocal
-
-ThreadLocal可以称为线程本地变量，或者线程本地存储；作用是提供线程内的局部变量（变量只在当前线程有效，并且在线程的生命周期内起作用，线程消失后变量也会消失）
-
-**原理**：每个Thread创建时自带一个ThreadLocal.ThreadLocalMap容器，key是ThreadLocal的实例，value是对应ThreadLocal存储的值
-
-~~~java
-public class Thread implements Runnable {
-    // 保存在Thread实例中的ThreadLocalMap对象
-    ThreadLocal.ThreadLocalMap threadLocals = null;
-}
-
-public class ThreadLocal<T> {
-    // 构造方法
-    public ThreadLocal() {
-    }
-     
-    // 内部类ThreadLocalMap
-    static class ThreadLocalMap {
-        // Entry 是一个以ThreadLocal为key,Object为value的键值对
-        // Entry 是弱引用，赋值为null是一定会被GC回收
-        static class Entry extends WeakReference<ThreadLocal<?>> {
-            /** The value associated with this ThreadLocal. */
-            Object value;
-
-            Entry(ThreadLocal<?> k, Object v) {
-                super(k);
-                value = v;
-            }
-        }
- 		// 初始容量
-        private static final int INITIAL_CAPACITY = 16;
- 		// Entry 数组
-        private Entry[] table;
-        ThreadLocalMap(ThreadLocal<?> firstKey, Object firstValue) {
-            table = new Entry[INITIAL_CAPACITY];
-            int i = firstKey.threadLocalHashCode & (INITIAL_CAPACITY - 1); // 计算哈希
-            table[i] = new Entry(firstKey, firstValue);
-            size = 1;
-            setThreshold(INITIAL_CAPACITY);
-        }
-        // set 方法
-        private void set(ThreadLocal<?> key, Object value) {  
-            Entry[] tab = table;
-            int len = tab.length;
-            int i = key.threadLocalHashCode & (len-1); // 计算hash
-			// 循环，直到e == null; i = nextIndex(i, len)采用线性探测
-            for (Entry e = tab[i]; e != null; e = tab[i = nextIndex(i, len)]) {
-                ThreadLocal<?> k = e.get(); 
-                if (k == key) {
-                    e.value = value;
-                    return;
-                } 
-                // e != null && k == null 说明 ThreadLocal被GC回收了
-                if (k == null) {
-                    // 覆盖原来的 key
-                    replaceStaleEntry(key, value, i);
-                    return;
-                }
-            }
-			// tab[i] == null 然后重新赋值
-            tab[i] = new Entry(key, value);
-            int sz = ++size;
-            if (!cleanSomeSlots(i, sz) && sz >= threshold)
-                rehash();
-        }
-        // 可以看出这里解决hash冲突，向数组的下一个位置
-        private static int nextIndex(int i, int len) {
-            return ((i + 1 < len) ? i + 1 : 0);
-        }
-    }
-}
-~~~
-
-**set方法**
-
-~~~java
-// 获取当前线程所对应的ThreadLocalMap，如果不为空，则调用ThreadLocalMap的set()方法，key就是当前ThreadLocal，
-public void set(T value) {
-    // 当前线程
-    Thread t = Thread.currentThread();
-    ThreadLocalMap map = getMap(t);
-    if (map != null) // 调用 ThreadLocalMap 的set()方法，key就是当前ThreadLocal
-        map.set(this, value);
-    else // 如果不存在，则调用createMap()方法新建一个
-        createMap(t, value);
-}
-ThreadLocalMap getMap(Thread t) {
-    return t.threadLocals;
-}
-// 未当前线程t 创建一个 ThreadLocalMap
-void createMap(Thread t, T firstValue) {
-    t.threadLocals = new ThreadLocalMap(this, firstValue);
-}
-~~~
-
-
-
-**get方法**
-
-~~~java
-public T get() {
-    Thread t = Thread.currentThread(); // 获取当前线程
-    // 获取当前线程的成员变量 ThreadLocalMap
-    ThreadLocalMap map = getMap(t);
-    if (map != null) {
-        // 获取map中 key == 当前threadLocal实例 的 entry
-        ThreadLocalMap.Entry e = map.getEntry(this);
-        if (e != null) {
-            @SuppressWarnings("unchecked")
-            T result = (T)e.value;
-            return result;
-        }
-    }
-    return setInitialValue();
-}
-// 初始化方法，和set方法一样，把初始值放入容器
-private T setInitialValue() {
-    T value = initialValue();
-    Thread t = Thread.currentThread();
-    ThreadLocalMap map = getMap(t);
-    if (map != null)
-        map.set(this, value);
-    else
-        createMap(t, value);
-    return value;
-}
-// 初始值，默认为null，提供模板可以让子类重写，赋值其他的初始值
-protected T initialValue() {
-    return null;
-}
-~~~
-
-### 总结
-
-- ThreadLocal 不是用于解决共享变量的问题的，也不是为了协调线程同步而存在，而是为了方便每个线程处理自己的状态而引入的一个机制。这点至关重要。
-- 每个Thread内部都有一个ThreadLocal.ThreadLocalMap类型的成员变量，该成员变量用来存储实际的ThreadLocal变量副本。
-- ThreadLocal并不是为线程保存对象的副本，它仅仅只起到一个索引的作用。它的主要目的是为每一个线程隔离一个类的实例，这个实例的作用范围仅限于线程内部。
 
 ### **注意事项**
 

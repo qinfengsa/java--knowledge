@@ -16,7 +16,7 @@ RPC(Remote Procedure Call)即远程过程调用，允许一台计算机调用另
 
 RPC 的目标就是要2~8 这些步骤都封装起来，让用户对这些细节透明。JAVA 一般使用动态代理方式实现远程调用。
 
-<img src="E:/mycode/GitHub/java-knowledge/note/img/rpc-process.jfif" alt="img" style="zoom:80%;" />
+<img src="img/rpc-process.jfif" alt="img" style="zoom:80%;" />
 
 ### RPC 接口设计
 
@@ -55,7 +55,7 @@ RPC 的目标就是要2~8 这些步骤都封装起来，让用户对这些细节
 Apache Dubbo 是一款高性能、轻量级的开源Java RPC框架，它提供了三大核心能力：
 
 - **面向接口的远程方法调用**：就像调用本地方法一样调用远程方法，只需简单配置，没有任何API侵入
-- **智能容错和负载均衡**：可在内网替代F5等硬件负载均衡器，降低成本，减少单点
+- **智能容错和负载均衡**：可在内网替代F5等硬件负载均衡器，降低成本，减少单点故障
 - **服务自动注册和发现**：不再需要写死服务提供方地址，注册中心基于接口名查询服务提供者的IP地址，并且能够平滑添加或删除服务提供者
 
 ### **Dubbo 架构图**
@@ -85,9 +85,9 @@ Dubbo框架设计一共划分了10个层
 9. 网络传输层（Transport）：抽象mina和netty为统一接口，以Message为中心，扩展接口为Channel、Transporter、Client、Server和Codec。
 10. 数据序列化层（Serialize）：可复用的一些工具，扩展接口为Serialization、 ObjectInput、ObjectOutput和ThreadPool。
 
-## Dubbo 源码解析
+### **启动代码**
 
-**启动代码**
+#### XML启动
 
 ~~~xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -132,13 +132,7 @@ public class Provider {
 
 
 
-
-
-
-
-
-
-**SpringBoot 启动**
+#### **SpringBoot 启动**
 
 引入dubbo-spring-boot-starter
 
@@ -201,6 +195,8 @@ public void DubboSPITest () throws Exception {
 // ExtensionLoader 缓存, class -> ExtensionLoader, 不同的接口class对应不同的ExtensionLoader
 private static final ConcurrentMap<Class<?>, ExtensionLoader<?>> EXTENSION_LOADERS 
     = new ConcurrentHashMap<>();
+
+
 public static <T> ExtensionLoader<T> getExtensionLoader(Class<T> type) {
     // 判断 type
     if (type == null) {
@@ -408,9 +404,9 @@ private T injectExtension(T instance) {
         if (objectFactory != null) {
             // 遍历目标类的所有方法
             for (Method method : instance.getClass().getMethods()) {
-                // 判断是set方法，且只有一个参数
+                // 判断是set方法,且只有一个参数
                 if (isSetter(method)) { 
-                    // 判断是否有 @DisableInject注解，可以禁用依赖注入
+                    // 判断是否有 @DisableInject注解,可以禁用依赖注入
                     if (method.getAnnotation(DisableInject.class) != null) {
                         continue;
                     }
@@ -420,7 +416,7 @@ private T injectExtension(T instance) {
                         continue;
                     }
                     try {
-                        // 获取set方法的属性名，比如 setName 方法对应属性名 name
+                        // 获取set方法的属性名,比如 setName 方法对应属性名 name
                         String property = getSetterProperty(method);
                         // 从 ObjectFactory 中获取依赖对象
                         Object object = objectFactory.getExtension(pt, property);
@@ -606,7 +602,7 @@ public class AdaptiveRobot implements  Robot {
 
 Dubbo是URL驱动的，所有的参数都存放在URL中，只要我们能获取到URL中我们需要的参数，就可以通过这个参数获取对应的扩展类实例，然后由这个实例调用具体的方法，这样就完成了选择的过程。
 
-但是，Dubbo存在相当多的扩展接口，按照上面的做法，那么每个扩展接口都需要写一个对应的class，如果我们多写几个Adaptive类，会发现好像存在相似性格，例如：扩展接口XXClass和扩展方法XXMethod
+但是，Dubbo存在相当多的扩展接口，按照上面的做法，那么每个扩展接口都需要写一个对应的class，如果我们多写几个Adaptive类，会发现好像存在相似性，例如：扩展接口XXClass和扩展方法XXMethod
 
 ~~~java
 public class AdaptiveXX implements XXClass {
@@ -1046,7 +1042,7 @@ private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> r
 ~~~java
 @SPI("dubbo")
 public interface Protocol {
-    // 自适应扩展,根据不同的协议自动选择试下
+    // 自适应扩展,根据不同的协议自动选择实现
 	@Adaptive
     <T> Exporter<T> export(Invoker<T> invoker) throws RpcException;
 }
@@ -3661,7 +3657,7 @@ Invoker<?> getInvoker(Channel channel, Invocation inv) throws RemotingException 
 
 ## 服务目录
 
-服务目录中存储了一些和服务提供者有关的信息，通过服务目录，服务消费者可获取到服务提供者的信息，比如 ip、端口、服务协议等。通过这些信息，服务消费者就可通过 Netty 等客户端进行远程调用。
+服务目录中存储了一些和服务提供者有关的信息，通过服务目录，服务消费者可获取到服务提供者的信息，比如 ip、端口、服务协议等。通过这些信息，服务消费者就可通过 Netty 等客户端进行远程调用
 
 ![Directory](img/Directory.png)
 

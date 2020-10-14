@@ -28,7 +28,7 @@
 | class           | 用来创建 bean 的 class，这个属性是强制性的                   |
 | id/name         | bean的唯一标识符。在基于 XML 的配置元数据中， 可以使用 ID 或者name 属性来指定 bean |
 | scope           | 定义bean 的作用域                                            |
-| constructor-arg | 基于构造函数的依赖注入，                                     |
+| constructor-arg | 基于构造函数的依赖注入                                       |
 | properties      | 基于set方法的依赖注入                                        |
 | autowire        | 自动装配（byName、byType、constructor）                      |
 | lazy-init       | 是否延迟加载                                                 |
@@ -2548,7 +2548,7 @@ public Object getSingleton(String beanName, ObjectFactory<?> singletonFactory) {
                 afterSingletonCreation(beanName);
             }
             if (newSingleton) {
-                // 添加到缓存
+                // 添加到缓存 IOC 容器
                 addSingleton(beanName, singletonObject);
             }
         }
@@ -3024,6 +3024,7 @@ if (hasInstAwareBpps || needsDepCheck) {
         }
     }
     if (needsDepCheck) {
+        // 检查依赖
         checkDependencies(beanName, mbd, filteredPds, pvs);
     }
 }
@@ -3427,17 +3428,20 @@ protected Object getSingleton(String beanName, boolean allowEarlyReference) {
     Object singletonObject = this.singletonObjects.get(beanName);
     // isSingletonCurrentlyInCreation(beanName)表示当前bean在初始化
     if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
-        // 同步锁保证线程安全
+        // 同步锁保证线程安全, 
         synchronized (this.singletonObjects) {
-            // 从提前曝光的单例缓存中查找bean实例 
+            // 从提前曝光的单例缓存中查找bean实例
             singletonObject = this.earlySingletonObjects.get(beanName);
+            // allowEarlyReference == true的方法 只有 getSingleton(String beanName) 
+            // 而这个方法是doGetBean刚开始就调用的, 和isSingletonCurrentlyInCreation冲突, 
+            // 说明当前bean是第二次做doGetBean, 即循环依赖
             if (singletonObject == null && allowEarlyReference) {
                 // 判断有没有对应的单例bean工厂 
                 ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
                 if (singletonFactory != null) {
                     singletonObject = singletonFactory.getObject();
                     this.earlySingletonObjects.put(beanName, singletonObject);
-                    // 用完添加到earlySingletonObjects缓存，并移除不在生产
+                    // 用完添加到earlySingletonObjects缓存,并移除不在生产
                     this.singletonFactories.remove(beanName);
                 }
             }

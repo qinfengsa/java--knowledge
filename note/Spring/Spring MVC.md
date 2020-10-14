@@ -1,10 +1,66 @@
-# 初始化
+
+
+## SpringMVC
+
+M: Model；V: View；C: Controller ->DispatcherServlet(通过 DispatcherServlet 进行处理)
+
+### **流程说明**
+
+![MVC-work.png](../img/MVC-work.png)
+
+（1）客户端（浏览器）发送请求，直接请求到 DispatcherServlet。
+
+（2）DispatcherServlet 根据请求信息调用 HandlerMapping，解析请求对应的 Handler。
+
+（3）解析到对应的 Handler（也就是我们平常说的 Controller 控制器）后，开始由 HandlerAdapter 适配器处理。
+
+（4）HandlerAdapter 会根据 Handler 来调用真正的处理器开处理请求，并处理相应的业务逻辑。
+
+（5）处理器处理完业务后，会返回一个 ModelAndView 对象，Model 是返回的数据对象，View 是个逻辑上的 View。
+
+（6）ViewResolver 会根据逻辑 View 查找实际的 View。
+
+（7）DispaterServlet 把返回的 Model 传给 View（视图渲染）。
+
+（8）把 View 返回给请求者（浏览器）
+
+### MVC 重要组件
+
+1. 前端控制器**DispatcherServlet**（不需要程序员开发），由框架提供
+
+   Spring MVC 的入口函数。功能是接收请求，响应结果，相当于转发器，是整个MVC流程控制的核心。DispatcherServlet 减少了其它组件之间的耦合度。相当于MVC模式中的c。
+
+2. 处理器映射器**HandlerMapping **（不需要程序员开发） 
+
+   HandlerMapping负责根据用户请求的url找到Handler即处理器（Controller），标注了@RequestMapping 的每个method 都可以看成是一个Handler，由Handler 来负责实际的请求处理
+
+3. 处理器适配器**HandlerAdapter**
+
+   按照特定规则（HandlerAdapter要求的规则）去执行Handler，这是适配器模式的应用，通过扩展适配器可以执行更多的方法
+
+4. 处理器**Handler**(需要程序员开发)
+
+   对url请求进行实际业务处理的类或方法，例如：标注了@RequestMapping 的每个method 都可以看成是一个Handler，由Handler 来负责实际的请求处理
+
+5. 视图解析器**ViewResolver**(不需要程序员开发)，由框架提供
+
+   负责将处理结果生成View视图，ViewResolver首先根据逻辑视图名解析成物理视图名，即具体的页面地址；再生成View视图对象，最后对View进行渲染将处理结果通过页面展示给用户
+
+6. 视图**View**(需要程序员开发)
+
+   View是一个接口，实现类支持不同的View类型（jsp、freemarker、 velocity)
+
+
+
+# 初始化阶段
 
 ## DispatcherServlet
 
 ![DispatcherServlet](../img/DispatcherServlet.png)
 
 DispatcherServlet => FrameworkServlet => HttpServletBean 
+
+### HttpServletBean 
 
  按照Servlet规范， Servlet容器在加载Servlet类的时候会调用init()方法，会调用HttpServletBean 的init()
 
@@ -34,6 +90,8 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 	}
 }
 ~~~
+
+### FrameworkServlet
 
 委派给子类FrameworkServlet调用initServletBean
 
@@ -221,13 +279,20 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 		configureAndRefreshWebApplicationContext(wac);
 
 		return wac;
-	}
-    
+	} 
+}
+~~~
+
+#### refresh
+
+当容器创建成功后，会调用 context的refresh方法，触发IOC容器的核心功能
+
+~~~java
+public abstract class FrameworkServlet extends HttpServletBean implements ApplicationContextAware { 
+    // 配置并刷新Cnotext
     protected void configureAndRefreshWebApplicationContext(ConfigurableWebApplicationContext wac) {
         // 设置ID
-		if (ObjectUtils.identityToString(wac).equals(wac.getId())) {
-			// The application context id is still set to its original default value
-			// -> assign a more useful id based on available information
+		if (ObjectUtils.identityToString(wac).equals(wac.getId())) { 
 			if (this.contextId != null) {
 				wac.setId(this.contextId);
 			} else {
@@ -241,11 +306,8 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 		wac.setServletContext(getServletContext());
 		wac.setServletConfig(getServletConfig());
 		wac.setNamespace(getNamespace());
-		wac.addApplicationListener(new SourceFilteringListener(wac, new ContextRefreshListener()));
-
-		// The wac environment's #initPropertySources will be called in any case when the context
-		// is refreshed; do it eagerly here to ensure servlet property sources are in place for
-		// use in any post-processing or initialization that occurs below prior to #refresh
+		wac.addApplicationListener(new SourceFilteringListener(wac, new ContextRefreshListener())); 
+        
 		ConfigurableEnvironment env = wac.getEnvironment();
 		if (env instanceof ConfigurableWebEnvironment) {
 			((ConfigurableWebEnvironment) env).initPropertySources(getServletContext(), getServletConfig());
@@ -259,9 +321,11 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 }
 ~~~
 
-### 配置解析
 
-Spring 解析扩展元素解析BeanDefinition时，会解析到MVC相关的标签，MvcNamespaceHandler基于Spring实现命名空间处理的扩展 
+
+## 配置解析
+
+Spring 解析扩展元素解析BeanDefinition时，会解析到MVC相关的标签，MvcNamespaceHandler是基于Spring实现命名空间处理的扩展 
 
 ~~~java
 public class MvcNamespaceHandler extends NamespaceHandlerSupport {
@@ -270,7 +334,7 @@ public class MvcNamespaceHandler extends NamespaceHandlerSupport {
 	public void init() {
         // 注解驱动
 		registerBeanDefinitionParser("annotation-driven", new AnnotationDrivenBeanDefinitionParser());
-        // 镜头资源处理
+        // 静态资源处理
 		registerBeanDefinitionParser("default-servlet-handler", 
                                      new DefaultServletHandlerBeanDefinitionParser());
         // 拦截器
@@ -296,7 +360,7 @@ public class MvcNamespaceHandler extends NamespaceHandlerSupport {
 }
 ~~~
 
-#### 注解驱动
+### 注解驱动
 
 ~~~xml
 <mvc:annotation-driven/> <!-- XML配置 -->
@@ -479,7 +543,7 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 }
 ~~~
 
-##### 内容协商
+#### 内容协商
 
 对web服务来说，进行数据交换可以使用多种格式（xml，json等），具体请求使用哪种格式是可以通过header信息沟通的，这里MVC需要创建一个内容协商管理器，保存当前web支持解析的格式
 
@@ -509,7 +573,7 @@ private RuntimeBeanReference getContentNegotiationManager(
 }
 ~~~
 
-默认的mediaTypes
+##### 默认的mediaTypes
 
 ~~~java
 static {
@@ -554,7 +618,7 @@ private Properties getDefaultMediaTypes() {
 }
 ~~~
 
-##### 设置handlerMapping路径匹配规则
+#### 设置handlerMapping路径匹配规则
 
 ~~~java
 private void configurePathMatchingProperties(
@@ -600,15 +664,17 @@ private void configurePathMatchingProperties(
 }
 ~~~
 
-##### RequestMappingHandlerMapping
+#### RequestMappingHandlerMapping
 
-注册url和Handler的映射关系
+注册url和Handler的映射关系，记录` @RequestMapping`和`@Controller`之间的关系
 
 ![RequestMappingHandlerMapping](../img/RequestMappingHandlerMapping.png)
 
-RequestMappingHandlerMapping被注入到Spring容器中，实现了ApplicationContextAware和InitializingBean接口
+RequestMappingHandlerMapping作为一个bean被注入到Spring容器中，实现了ApplicationContextAware和InitializingBean接口
 
-在bean 初始化前调用setApplicationContext方法
+##### ApplicationContextAware
+
+在bean 初始化前会调用setApplicationContext方法
 
 ~~~java
 public abstract class ApplicationObjectSupport implements ApplicationContextAware { 
@@ -641,77 +707,63 @@ public abstract class ApplicationObjectSupport implements ApplicationContextAwar
 }
 ~~~
 
-在bean 初始化时调用afterPropertiesSet方法
+###### initApplicationContext
+
+RequestMappingHandlerMapping的initApplicationContext的主要目的是初始化拦截器
 
 ~~~java
-public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMapping 
-    implements InitializingBean {
-    // 子类有重写,但子类中也调用了这个方法
-    @Override
-	public void afterPropertiesSet() {
-		initHandlerMethods();
-	} 
-    protected void initHandlerMethods() {
-        // 遍历 beanName
-		for (String beanName : getCandidateBeanNames()) {
-			if (!beanName.startsWith(SCOPED_TARGET_NAME_PREFIX)) {
-				// 处理 bean
-				processCandidateBean(beanName);
+public abstract class WebApplicationObjectSupport extends ApplicationObjectSupport 
+    implements ServletContextAware {
+	@Override
+	protected void initApplicationContext(ApplicationContext context) {
+        // 父类方法
+		super.initApplicationContext(context);
+		if (this.servletContext == null && context instanceof WebApplicationContext) {
+			this.servletContext = ((WebApplicationContext) context).getServletContext();
+			if (this.servletContext != null) {
+				// 初始化 ServletContext
+				initServletContext(this.servletContext);
 			}
 		}
-		// 统计信息 mappings的数量,打印
-		handlerMethodsInitialized(getHandlerMethods());
-	}
-    
-    protected void processCandidateBean(String beanName) {
-		Class<?> beanType = null;
-		try {
-			beanType = obtainApplicationContext().getType(beanName);
-		} 
-        // catch (Throwable ex) {  }
-		// isHandler 子类实现,判断beanType 是否有 @Controller @RequestMapping
-		if (beanType != null && isHandler(beanType)) {
-			// 检测 beanName 包含的所有HandlerMethod
-			detectHandlerMethods(beanName);
-		}
-	}
-    // 检测 beanName 包含的所有HandlerMethod
-    protected void detectHandlerMethods(Object handler) {
-		Class<?> handlerType = (handler instanceof String ?
-				obtainApplicationContext().getType((String) handler) : handler.getClass()); 
-		if (handlerType != null) {
-			Class<?> userType = ClassUtils.getUserClass(handlerType);
-			// method -> RequestMappingInfo 的 map
-			Map<Method, T> methods = MethodIntrospector.selectMethods(userType,
-					(MethodIntrospector.MetadataLookup<T>) method -> {
-						try {
-							// 获取 RequestMappingInfo
-							return getMappingForMethod(method, userType);
-						}
-						catch (Throwable ex) {
-							throw new IllegalStateException("Invalid mapping on handler class [" +
-									userType.getName() + "]: " + method, ex);
-						}
-					}); 
-			// 遍历 methods,  注册
-			methods.forEach((method, mapping) -> {
-				Method invocableMethod = AopUtils.selectInvocableMethod(method, userType);
-				registerHandlerMethod(handler, invocableMethod, mapping);
-			});
-		}
-	} 
-    // 注册
-    protected void registerHandlerMethod(Object handler, Method method, T mapping) {
-		this.mappingRegistry.register(mapping, handler, method);
 	}
 }
-// RequestMappingHandlerMapping是AbstractHandlerMethodMapping的子类
+// 父类方法
+public abstract class ApplicationObjectSupport implements ApplicationContextAware { 
+	protected void initApplicationContext(ApplicationContext context) throws BeansException {
+		initApplicationContext();
+	} 
+    // 其他子类重写
+	protected void initApplicationContext() throws BeansException {
+	}
+}
+public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
+		implements HandlerMapping, Ordered, BeanNameAware {
+	@Override
+	protected void initApplicationContext() throws BeansException {
+		extendInterceptors(this.interceptors);
+		detectMappedInterceptors(this.adaptedInterceptors);
+		// 初始化拦截器
+		initInterceptors();
+	}
+}
+~~~
+
+
+
+##### InitializingBean
+
+RequestMappingHandlerMapping实现了InitializingBean接口，在bean 初始化时调用afterPropertiesSet方法
+
+###### afterPropertiesSet
+
+~~~java
 // T 对应 RequestMappingInfo
 public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMapping
 		implements MatchableHandlerMapping, EmbeddedValueResolverAware {
     // 重写afterPropertiesSet
     @Override
 	public void afterPropertiesSet() {
+        // 创建配置信息并初始化
 		this.config = new RequestMappingInfo.BuilderConfiguration();
 		this.config.setUrlPathHelper(getUrlPathHelper());
 		this.config.setPathMatcher(getPathMatcher());
@@ -719,9 +771,106 @@ public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMappi
 		this.config.setTrailingSlashMatch(this.useTrailingSlashMatch);
 		this.config.setRegisteredSuffixPatternMatch(this.useRegisteredSuffixPatternMatch);
 		this.config.setContentNegotiationManager(getContentNegotiationManager());
-		// 还会调用父类的方法
+		// 还会调用父类的afterPropertiesSet方法
 		super.afterPropertiesSet();
 	}
+	
+}
+public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMapping 
+    implements InitializingBean {
+    // 子类有重写,但子类中也调用了这个方法
+    @Override
+	public void afterPropertiesSet() {
+        // 初始化handler
+		initHandlerMethods();
+	} 
+}
+~~~
+
+initHandlerMethods
+
+###### 遍历 bean
+
+~~~java
+protected void initHandlerMethods() {
+    // 遍历 beanName
+    for (String beanName : getCandidateBeanNames()) {
+        if (!beanName.startsWith(SCOPED_TARGET_NAME_PREFIX)) {
+            // 处理 bean
+            processCandidateBean(beanName);
+        }
+    }
+    // 统计信息 mappings的数量,打印
+    handlerMethodsInitialized(getHandlerMethods());
+}
+~~~
+
+###### 处理 bean
+
+1. 判断当前class是否有注解：@Controller 或 @RequestMapping
+
+~~~java
+protected void processCandidateBean(String beanName) {
+    Class<?> beanType = null;
+    try {
+        beanType = obtainApplicationContext().getType(beanName);
+    } 
+    // catch (Throwable ex) {  }
+    // isHandler 子类实现,判断beanType 是否有 @Controller 或 @RequestMapping
+    if (beanType != null && isHandler(beanType)) {
+        // 检测 beanName 包含的所有HandlerMethod
+        detectHandlerMethods(beanName);
+    }
+}
+// isHandler 子类方法
+@Override
+protected boolean isHandler(Class<?> beanType) {
+    return (AnnotatedElementUtils.hasAnnotation(beanType, Controller.class) ||
+            AnnotatedElementUtils.hasAnnotation(beanType, RequestMapping.class));
+} 
+~~~
+
+###### 处理 bean内部的method
+
+~~~java
+// 检测 beanName 包含的所有HandlerMethod
+protected void detectHandlerMethods(Object handler) {
+    Class<?> handlerType = (handler instanceof String ?
+                            obtainApplicationContext().getType((String) handler) : handler.getClass()); 
+    if (handlerType != null) {
+        // 如果是cglib代理的class,需要获取原来的class
+        Class<?> userType = ClassUtils.getUserClass(handlerType);
+        // 生成 method -> RequestMappingInfo 的 map
+        // selectMethods 遍历 class 所有的 method
+        // 把@RequestMapping 注解 封装成RequestMappingInfo对象 放入map中
+        // T 对应 RequestMappingInfo
+        Map<Method, T> methods = MethodIntrospector.selectMethods(userType,
+            (MethodIntrospector.MetadataLookup<T>) method -> {
+                try {
+                    // 获取 RequestMappingInfo,模板方法 子类实现
+                    return getMappingForMethod(method, userType);
+                }
+                catch (Throwable ex) {
+                    throw new IllegalStateException( );
+                }
+            }); 
+        // 遍历 methods, 注册
+        methods.forEach((method, mapping) -> {
+            Method invocableMethod = AopUtils.selectInvocableMethod(method, userType);
+            // 注册 handler（beanName）,invocableMethod, mapping
+            registerHandlerMethod(handler, invocableMethod, mapping);
+        });
+    }
+} 
+~~~
+
+###### getMappingForMethod
+
+获取 方法的 @RequestMapping 注解 然后封装成RequestMappingInfo对象
+
+~~~java
+public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMapping
+		implements MatchableHandlerMapping, EmbeddedValueResolverAware {	
 	@Override
 	@Nullable
 	protected RequestMappingInfo getMappingForMethod(Method method, Class<?> handlerType) {
@@ -743,23 +892,47 @@ public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMappi
 		return info;
 	}
 }
+@Nullable
+private RequestMappingInfo createRequestMappingInfo(AnnotatedElement element) {
+    // 获取 @RequestMapping 注解 然后封装成RequestMappingInfo对象
+    RequestMapping requestMapping = AnnotatedElementUtils.findMergedAnnotation(element, 
+        RequestMapping.class);
+    RequestCondition<?> condition = (element instanceof Class ?
+        getCustomTypeCondition((Class<?>) element) : getCustomMethodCondition((Method) element));
+    return (requestMapping != null ? createRequestMappingInfo(requestMapping, condition) : null);
+}
 ~~~
+
+
 
 ###### 注册
 
 ~~~java
-// AbstractHandlerMethodMapping<T> 的内部类,T 对应 RequestMappingInfo
+// 注册
+protected void registerHandlerMethod(Object handler, Method method, T mapping) {
+    this.mappingRegistry.register(mapping, handler, method);
+}
+~~~
+
+##### MappingRegistry
+
+MappingRegistry是AbstractHandlerMethodMapping<T> 的内部类，T 对应 RequestMappingInfo
+
+用来记录method 和 RequestMappingInfo 的映射关系
+
+~~~java
 class MappingRegistry {
+    // RequestMappingInfo -> MappingRegistration 的映射
     private final Map<T, MappingRegistration<T>> registry = new HashMap<>();
-
+	// RequestMappingInfo -> HandlerMethod 的映射
     private final Map<T, HandlerMethod> mappingLookup = new LinkedHashMap<>();
-
+	// url路径 -> RequestMappingInfo 的映射
     private final MultiValueMap<String, T> urlLookup = new LinkedMultiValueMap<>();
 
     private final Map<String, List<HandlerMethod>> nameLookup = new ConcurrentHashMap<>();
 
     private final Map<HandlerMethod, CorsConfiguration> corsLookup = new ConcurrentHashMap<>();
-
+	// 读写锁
     private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     
     public void register(T mapping, Object handler, Method method) {
@@ -805,11 +978,9 @@ class MappingRegistry {
 
 
 
+#### 消息转换器
 
-
-
-
-##### 消息转换器
+解析子标签 \<mvc:message-converters> ， 获取所有消息转换器，同时注册默认的消息转换器
 
 ~~~java
 private ManagedList<?> getMessageConverters(Element element, @Nullable Object source,ParserContext context) {
@@ -823,7 +994,7 @@ private ManagedList<?> getMessageConverters(Element element, @Nullable Object so
             messageConverters.add(object);
         }
     }
-    // 是否注册默认值ByteArrayHttpMessageConverter
+    // 是否注册默认值 
     if (convertersElement == null || 
         Boolean.parseBoolean(convertersElement.getAttribute("register-defaults"))) {
         messageConverters.setSource(source);
@@ -897,15 +1068,15 @@ private ManagedList<?> getMessageConverters(Element element, @Nullable Object so
 }
 ~~~
 
-##### 注册默认组件
+#### 注册默认组件
 
 ~~~java
 public static void registerDefaultComponents(ParserContext parserContext, @Nullable Object source) {
     // 注册 BeanNameUrlHandlerMapping
     registerBeanNameUrlHandlerMapping(parserContext, source);
-    // 注册 HttpRequestHandlerAdapter
+    // 注册 HttpRequestHandlerAdapter 判断是否适配http请求
     registerHttpRequestHandlerAdapter(parserContext, source);
-    // 注册 SimpleControllerHandlerAdapter
+    // 注册 SimpleControllerHandlerAdapter 判断是否适配controller
     registerSimpleControllerHandlerAdapter(parserContext, source);
     // 注册 HandlerMappingIntrospector
     registerHandlerMappingIntrospector(parserContext, source);
@@ -914,9 +1085,9 @@ public static void registerDefaultComponents(ParserContext parserContext, @Nulla
 
 
 
-##### BeanNameUrlHandlerMapping
+#### BeanNameUrlHandlerMapping
 
-代码实现方式
+以beanName作为url路径访问Controller，代码实现方式
 
 ~~~java
 // 以斜杠开头,继承AbstractController
@@ -970,6 +1141,8 @@ public abstract class ApplicationObjectSupport implements ApplicationContextAwar
 	}
 }
 ~~~
+
+##### initApplicationContext
 
 initApplicationContext()方法最终会调用AbstractDetectingUrlHandlerMapping的initApplicationContext()；AbstractDetectingUrlHandlerMapping是BeanNameUrlHandlerMapping 的父类
 
@@ -1027,7 +1200,7 @@ public class BeanNameUrlHandlerMapping extends AbstractDetectingUrlHandlerMappin
 }
 ```
 
-###### 注册
+##### 注册
 
 ~~~java
 public abstract class AbstractUrlHandlerMapping extends AbstractHandlerMapping 
@@ -1053,9 +1226,7 @@ public abstract class AbstractUrlHandlerMapping extends AbstractHandlerMapping
 		Object mappedHandler = this.handlerMap.get(urlPath);
 		if (mappedHandler != null) {
 			if (mappedHandler != resolvedHandler) {
-				throw new IllegalStateException(
-						"Cannot map " + getHandlerDescription(handler) + " to URL path [" + urlPath +
-						"]: There is already " + getHandlerDescription(mappedHandler) + " mapped.");
+				throw new IllegalStateException( );
 			}
 		} else {
 			if (urlPath.equals("/")) { 
@@ -1074,7 +1245,7 @@ public abstract class AbstractUrlHandlerMapping extends AbstractHandlerMapping
 
 
 
-##### HandlerMappingIntrospector
+#### HandlerMappingIntrospector
 
 ![HandlerMappingIntrospector](../img/HandlerMappingIntrospector.png)
 
@@ -1113,7 +1284,7 @@ public class HandlerMappingIntrospector
 
 
 
-#### 静态资源处理
+### 静态资源处理
 
 在配置dispatchServlet时配置<url-pattern>/</url-pattern>拦截所有请求，这时候dispatchServlet完全取代了default servlet，将不会再访问容器中原始默认的servlet，而对静态资源的访问就是通过容器默认servlet处理的，故而这时候静态资源将不可访问；
 
@@ -1173,7 +1344,7 @@ class DefaultServletHandlerBeanDefinitionParser implements BeanDefinitionParser 
 }
 ~~~
 
-#### 拦截器
+### 拦截器
 
 ~~~java
 class InterceptorsBeanDefinitionParser implements BeanDefinitionParser {
@@ -1240,7 +1411,7 @@ class InterceptorsBeanDefinitionParser implements BeanDefinitionParser {
 
 
 
-#### resource
+### resource
 
 ~~~xml
 <mvc:resources location="/static/" mapping="/static/**"/>
@@ -1314,7 +1485,7 @@ class ResourcesBeanDefinitionParser implements BeanDefinitionParser {
 
 
 
-#### 控制器
+### 控制器
 
 配置解析\<mvc:view-controller/>、\<mvc:redirect-view-controller/>、\<mvc:status-controller/>。
 
@@ -1383,7 +1554,7 @@ class ViewControllerBeanDefinitionParser implements BeanDefinitionParser {
 
 
 
-#### 视图解析器
+### 视图解析器
 
 ~~~java
 public class ViewResolversBeanDefinitionParser implements BeanDefinitionParser { 
@@ -1484,7 +1655,7 @@ public class ViewResolversBeanDefinitionParser implements BeanDefinitionParser {
 
 
 
-#### 视图配置器
+### 视图配置器
 
 ~~~java
 public class FreeMarkerConfigurerBeanDefinitionParser extends AbstractSingleBeanDefinitionParser { 
@@ -1563,6 +1734,7 @@ public class DispatcherServlet extends FrameworkServlet {
 ~~~java
 private void initMultipartResolver(ApplicationContext context) {
     try {
+        // 通过getBean方法把对应的bean实例化,并注入IOC容器
         this.multipartResolver = context.getBean(MULTIPART_RESOLVER_BEAN_NAME, MultipartResolver.class);
     } catch (NoSuchBeanDefinitionException ex) {
         // Default is no multipart resolver.
@@ -1578,6 +1750,7 @@ private void initMultipartResolver(ApplicationContext context) {
 ~~~java
 private void initLocaleResolver(ApplicationContext context) {
     try {
+        // 通过getBean方法把对应的bean实例化,并注入IOC容器
         this.localeResolver = context.getBean(LOCALE_RESOLVER_BEAN_NAME, LocaleResolver.class); 
     } catch (NoSuchBeanDefinitionException ex) {
         // We need to use the default.
@@ -1593,6 +1766,7 @@ private void initLocaleResolver(ApplicationContext context) {
 ~~~java
 private void initThemeResolver(ApplicationContext context) {
     try {
+        // 通过getBean方法把对应的bean实例化,并注入IOC容器
         this.themeResolver = context.getBean(THEME_RESOLVER_BEAN_NAME, ThemeResolver.class); 
     } catch (NoSuchBeanDefinitionException ex) {
         // We need to use the default.
@@ -1605,28 +1779,31 @@ private void initThemeResolver(ApplicationContext context) {
 
 ### HandlerMapping
 
+从IOC容器中获取 HandlerMapping 接口的bean集合，赋值给`this.handlerMappings`
+
 ~~~java
 private void initHandlerMappings(ApplicationContext context) {
     this.handlerMappings = null;
-
+	// 是否检测所有 HandlerMappings 默认为true
     if (this.detectAllHandlerMappings) {
-        // Find all HandlerMappings in the ApplicationContext, including ancestor contexts.
+      	// 获取所有 HandlerMapping 接口的bean
         Map<String, HandlerMapping> matchingBeans =
             BeanFactoryUtils.beansOfTypeIncludingAncestors(context, HandlerMapping.class, true, false);
         if (!matchingBeans.isEmpty()) {
             this.handlerMappings = new ArrayList<>(matchingBeans.values());
             // We keep HandlerMappings in sorted order.
+            // 排序
             AnnotationAwareOrderComparator.sort(this.handlerMappings);
         }
     } else {
+        // 只获取 name = "handlerMapping" 的 HandlerMapping
         try {
             HandlerMapping hm = context.getBean(HANDLER_MAPPING_BEAN_NAME, HandlerMapping.class);
             this.handlerMappings = Collections.singletonList(hm);
         } // catch (NoSuchBeanDefinitionException ex) 
     }
 
-    // Ensure we have at least one HandlerMapping, by registering
-    // a default HandlerMapping if no other mappings are found.
+    // 如果为null,构造一个默认的 HandlerMapping
     if (this.handlerMappings == null) {
         this.handlerMappings = getDefaultStrategies(context, HandlerMapping.class); 
     }
@@ -1635,12 +1812,14 @@ private void initHandlerMappings(ApplicationContext context) {
 
 ### HandlerAdapter
 
+从IOC容器中获取 HandlerAdapter 接口的bean集合，赋值给`this.handlerAdapters`
+
 ~~~java
 private void initHandlerAdapters(ApplicationContext context) {
     this.handlerAdapters = null;
-
+	// 是否检测所有 HandlerAdapter 默认为true
     if (this.detectAllHandlerAdapters) {
-        // Find all HandlerAdapters in the ApplicationContext, including ancestor contexts.
+        // 获取所有 HandlerAdapter 接口的bean
         Map<String, HandlerAdapter> matchingBeans =
             BeanFactoryUtils.beansOfTypeIncludingAncestors(context, HandlerAdapter.class, true, false);
         if (!matchingBeans.isEmpty()) {
@@ -1650,14 +1829,14 @@ private void initHandlerAdapters(ApplicationContext context) {
         }
     }
     else {
+        // 只获取 name = "handlerAdapter" 的 HandlerAdapter
         try {
             HandlerAdapter ha = context.getBean(HANDLER_ADAPTER_BEAN_NAME, HandlerAdapter.class);
             this.handlerAdapters = Collections.singletonList(ha);
         } // catch (NoSuchBeanDefinitionException ex)  
     }
 
-    // Ensure we have at least some HandlerAdapters, by registering
-    // default HandlerAdapters if no other adapters are found.
+    // 如果为null,构造一个默认的 HandlerAdapter
     if (this.handlerAdapters == null) {
         this.handlerAdapters = getDefaultStrategies(context, HandlerAdapter.class); 
     }
@@ -1671,9 +1850,9 @@ private void initHandlerAdapters(ApplicationContext context) {
 ~~~java
 private void initHandlerExceptionResolvers(ApplicationContext context) {
     this.handlerExceptionResolvers = null;
-
+	// 是否检测所有异常解析器
     if (this.detectAllHandlerExceptionResolvers) {
-        // Find all HandlerExceptionResolvers in the ApplicationContext, including ancestor contexts.
+        // 获取所有 HandlerExceptionResolver 接口的bean
         Map<String, HandlerExceptionResolver> matchingBeans = BeanFactoryUtils
             .beansOfTypeIncludingAncestors(context, HandlerExceptionResolver.class, true, false);
         if (!matchingBeans.isEmpty()) {
@@ -1684,14 +1863,14 @@ private void initHandlerExceptionResolvers(ApplicationContext context) {
     }
     else {
         try {
+            // 只获取 name = "handlerExceptionResolver" 的 HandlerExceptionResolver
             HandlerExceptionResolver her =
                 context.getBean(HANDLER_EXCEPTION_RESOLVER_BEAN_NAME, HandlerExceptionResolver.class);
             this.handlerExceptionResolvers = Collections.singletonList(her);
         } // catch (NoSuchBeanDefinitionException ex)  
     }
 
-    // Ensure we have at least some HandlerExceptionResolvers, by registering
-    // default HandlerExceptionResolvers if no other resolvers are found.
+    // 如果为null,构造一个默认的 HandlerExceptionResolver
     if (this.handlerExceptionResolvers == null) {
         this.handlerExceptionResolvers = getDefaultStrategies(context, HandlerExceptionResolver.class); 
     }
@@ -1705,6 +1884,7 @@ private void initHandlerExceptionResolvers(ApplicationContext context) {
 ~~~java
 private void initRequestToViewNameTranslator(ApplicationContext context) {
     try {
+        // 通过getBean方法把对应的bean实例化,并注入IOC容器
         this.viewNameTranslator =
             context.getBean(REQUEST_TO_VIEW_NAME_TRANSLATOR_BEAN_NAME, RequestToViewNameTranslator.class); 
     } catch (NoSuchBeanDefinitionException ex) {
@@ -1721,9 +1901,9 @@ private void initRequestToViewNameTranslator(ApplicationContext context) {
 ~~~java
 private void initViewResolvers(ApplicationContext context) {
     this.viewResolvers = null;
-
+	// 是否检测所有视图解析器
     if (this.detectAllViewResolvers) {
-        // Find all ViewResolvers in the ApplicationContext, including ancestor contexts.
+        // 获取所有 ViewResolver 接口的bean
         Map<String, ViewResolver> matchingBeans =
             BeanFactoryUtils.beansOfTypeIncludingAncestors(context, ViewResolver.class, true, false);
         if (!matchingBeans.isEmpty()) {
@@ -1733,13 +1913,13 @@ private void initViewResolvers(ApplicationContext context) {
         }
     }  else {
         try {
+            // 只获取 name = "viewResolver" 的 ViewResolver
             ViewResolver vr = context.getBean(VIEW_RESOLVER_BEAN_NAME, ViewResolver.class);
             this.viewResolvers = Collections.singletonList(vr);
         } // catch (NoSuchBeanDefinitionException ex) 
     }
 
-    // Ensure we have at least one ViewResolver, by registering
-    // a default ViewResolver if no other resolvers are found.
+    // 如果为null,构造一个默认的 ViewResolver
     if (this.viewResolvers == null) {
         this.viewResolvers = getDefaultStrategies(context, ViewResolver.class); 
     }
@@ -1753,6 +1933,7 @@ private void initViewResolvers(ApplicationContext context) {
 ~~~java
 private void initFlashMapManager(ApplicationContext context) {
     try {
+        // 通过getBean方法把对应的bean实例化,并注入IOC容器
         this.flashMapManager = context.getBean(FLASH_MAP_MANAGER_BEAN_NAME, FlashMapManager.class); 
     } catch (NoSuchBeanDefinitionException ex) {
         // We need to use the default.
@@ -1767,7 +1948,7 @@ private void initFlashMapManager(ApplicationContext context) {
 
 
 
-# 请求响应
+# 请求响应阶段
 
 Servlet标准定义了所有请求先由service方法处理，FrameworkServlet覆盖了service方法:
 
@@ -1841,6 +2022,8 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 
 
 ```
+
+## doDispatch
 
 最终会调用DispatcherServlet 的doService()；而doService()的核心方法是doDispatch()
 
@@ -1956,7 +2139,7 @@ protected HandlerExecutionChain getHandler(HttpServletRequest request) throws Ex
 }
 ~~~
 
-**获取request的handler执行链**
+### **获取request的handler执行链**
 
 ~~~java
 public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
@@ -1973,7 +2156,7 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 		}
 		// Bean name or resolved handler?
 		if (handler instanceof String) {
-			// 如果handler是String类型,得到的handlerd额beanName
+			// 如果handler是String类型,得到的handler的beanName
 			String handlerName = (String) handler;
 			// 通过handlerName去容器中找到bean对象
 			handler = obtainApplicationContext().getBean(handlerName);
@@ -1993,6 +2176,77 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	}
 }
 ~~~
+
+#### getHandlerInternal
+
+根据request获取对应的HandlerMethod
+
+~~~java
+public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMapping
+		implements MatchableHandlerMapping, EmbeddedValueResolverAware {    
+	@Override
+    protected HandlerMethod getHandlerInternal(HttpServletRequest request) throws Exception {
+        try {
+            return super.getHandlerInternal(request);
+        }
+        finally {
+            ProducesRequestCondition.clearMediaTypesAttribute(request);
+        }
+    }
+}
+public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMapping 
+    implements InitializingBean {
+	@Override
+	protected HandlerMethod getHandlerInternal(HttpServletRequest request) throws Exception {
+		// 根据request获取对应的urlpath
+		String lookupPath = getUrlPathHelper().getLookupPathForRequest(request);
+		request.setAttribute(LOOKUP_PATH, lookupPath);
+        // 加锁
+		this.mappingRegistry.acquireReadLock();
+		try {
+			// 根据lookupPath和request匹配业务handler方法
+			// RequestMappingInfo -> HandlerMethod 的映射 Map<T, HandlerMethod> mappingLookup
+			// url路径 -> RequestMappingInfo 的映射 MultiValueMap<String, T> urlLookup
+			// 最终通过MappingRegistry的两个映射map匹配到 HandlerMethod
+			HandlerMethod handlerMethod = lookupHandlerMethod(lookupPath, request);
+			return (handlerMethod != null ? handlerMethod.createWithResolvedBean() : null);
+		}
+		finally {
+            // 释放锁
+			this.mappingRegistry.releaseReadLock();
+		}
+	}
+}
+~~~
+
+#### getHandlerExecutionChain
+
+根据handler和request获取执行链
+
+~~~java
+protected HandlerExecutionChain getHandlerExecutionChain(Object handler, HttpServletRequest request) {
+    // 先把handler加入执行链
+    HandlerExecutionChain chain = (handler instanceof HandlerExecutionChain ?
+                                   (HandlerExecutionChain) handler : new HandlerExecutionChain(handler));
+    // 根据request获取对应的urlpath
+    String lookupPath = this.urlPathHelper.getLookupPathForRequest(request, LOOKUP_PATH);
+    for (HandlerInterceptor interceptor : this.adaptedInterceptors) {
+        if (interceptor instanceof MappedInterceptor) {
+            MappedInterceptor mappedInterceptor = (MappedInterceptor) interceptor;
+            // urlpath 匹配拦截器, 加入到 执行链
+            if (mappedInterceptor.matches(lookupPath, this.pathMatcher)) {
+                chain.addInterceptor(mappedInterceptor.getInterceptor());
+            }
+        }
+        else {
+            chain.addInterceptor(interceptor);
+        }
+    }
+    return chain;
+}
+~~~
+
+
 
 ## 查找HandlerAdapter
 
@@ -2027,7 +2281,7 @@ public class HandlerExecutionChain {
 				HandlerInterceptor interceptor = interceptors[i];
 				//  执行拦截器的前置处理方法
 				if (!interceptor.preHandle(request, response, this.handler)) {
-					// 如果返回false 指向完成后方法
+					// 如果返回false 直接执行完成后方法
 					triggerAfterCompletion(request, response, null);
 					return false;
 				}
@@ -2082,8 +2336,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 		if (!response.containsHeader(HEADER_CACHE_CONTROL)) {
 			if (getSessionAttributesHandler(handlerMethod).hasSessionAttributes()) {
 				applyCacheSeconds(response, this.cacheSecondsForSessionAttributeHandlers);
-			}
-			else {
+			} else {
 				// 准备响应
 				prepareResponse(response);
 			}
@@ -2166,7 +2419,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 
 
 
-### 后置拦截器
+### 后置拦截
 
 请求执行完成后，生成视图之前执行
 
@@ -2185,22 +2438,6 @@ public class HandlerExecutionChain {
 		}
 	}
 }
-public class HandlerExecutionChain {	
-	void triggerAfterCompletion(HttpServletRequest request, HttpServletResponse response,  Exception ex)
-			throws Exception {
-		// 获取拦截器
-		HandlerInterceptor[] interceptors = getInterceptors();
-		if (!ObjectUtils.isEmpty(interceptors)) {
-			for (int i = this.interceptorIndex; i >= 0; i--) {
-				HandlerInterceptor interceptor = interceptors[i];
-				try {
-					// 执行拦截器的完成事件
-					interceptor.afterCompletion(request, response, this.handler, ex);
-				} // catch ...
-			}
-		}
-	}
-}
 ~~~
 
 
@@ -2213,8 +2450,8 @@ public class HandlerExecutionChain {
 
 ~~~java
 private void processDispatchResult(HttpServletRequest request, HttpServletResponse response,
-                                   @Nullable HandlerExecutionChain mappedHandler, @Nullable ModelAndView mv,
-                                   @Nullable Exception exception) throws Exception {
+    @Nullable HandlerExecutionChain mappedHandler, @Nullable ModelAndView mv,
+    @Nullable Exception exception) throws Exception {
 
     boolean errorView = false;
     // 异常不为空
@@ -2253,4 +2490,71 @@ private void processDispatchResult(HttpServletRequest request, HttpServletRespon
 ~~~
 
 #### 渲染视图
+
+~~~java
+protected void render(ModelAndView mv, HttpServletRequest request, HttpServletResponse response) throws Exception { 
+    // 国际化,确定请求的语言环境
+    Locale locale =
+        (this.localeResolver != null ? this.localeResolver.resolveLocale(request) : request.getLocale());
+    // 请求响应设置国际化
+    response.setLocale(locale);
+
+    View view;
+    // 获取视图名称
+    String viewName = mv.getViewName();
+    if (viewName != null) { 
+        // 解析视图
+        view = resolveViewName(viewName, mv.getModelInternal(), locale, request);
+        if (view == null) {
+            throw new ServletException();
+        }
+    }
+    else {
+        // No need to lookup: the ModelAndView object contains the actual View object.
+        view = mv.getView();
+        if (view == null) {
+            throw new ServletException();
+        }
+    }
+ 
+    try {
+        if (mv.getStatus() != null) {
+            response.setStatus(mv.getStatus().value());
+        }
+        // 视图渲染
+        view.render(mv.getModelInternal(), request, response);
+    }  catch (Exception ex) { 
+        throw ex;
+    }
+}
+
+~~~
+
+
+
+
+
+### 完成后拦截
+
+请求执行完成后，生成视图之后执行
+
+~~~java
+public class HandlerExecutionChain {	
+	void triggerAfterCompletion(HttpServletRequest request, HttpServletResponse response,  Exception ex)
+			throws Exception {
+		// 获取拦截器
+		HandlerInterceptor[] interceptors = getInterceptors();
+		if (!ObjectUtils.isEmpty(interceptors)) {
+			for (int i = this.interceptorIndex; i >= 0; i--) {
+				HandlerInterceptor interceptor = interceptors[i];
+				try {
+					// 执行拦截器的完成事件
+					interceptor.afterCompletion(request, response, this.handler, ex);
+				} // catch ...
+			}
+		}
+	}
+}
+~~~
+
 

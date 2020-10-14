@@ -19,22 +19,23 @@ Kafka 是一个基于发布/订阅的分布式消息系统。目前 Kafka定位�
 5. 消息的可靠性存储
 6. 是否支持多协议
 
-**三大角色**
+### **三大角色**
 
-* 消息系统：Kafka和传统的消息系统（也称作消息中间件）都具备系统解耦、冗余存储、流量削峰、缓冲、异步通信、扩展性、可恢复性等功能。与此同时， Kafka还提供了大多数消息系统难以实现的消息顺序性保障及回溯消费的功能。
-* 存储系统：Kafka把消息持久化到磁盘，相比于其他基于内存存储的系统而言，有效地降低了数据丢失的风险。也正是得益于 Kafka的消息持久化功能和多副本机制，我们可以把 Kafka作为长期的数据存储系统来使用，只需要把对应的数据保留策略设置为“永久”或启用主题的日志压缩功能即可。
+* 消息系统：消息系统的三大功能：解耦、异步、削峰；同时， Kafka提供了消息顺序性保障及回溯消费的功能
+* 存储系统：Kafka把消息持久化到磁盘，相比其他基于内存存储的系统而言，有效地降低了数据丢失的风险
 * 流式处理平台：Kafka不仅为每个流行的流式处理框架提供了可靠的数据来源，还提供了一个完整的流式处理类库，比如窗口、连接、变换和聚合等各类操作 
 
 
 
-  Kafka的特性:
+####   Kafka的特性
+
 - 高吞吐量、低延迟：kafka每秒可以处理几十万条消息，它的延迟最低只有几毫秒，每个topic可以分多个partition, consumer group 对partition进行consume操作。
 - 可扩展性：kafka集群支持热扩展
 - 持久性、可靠性：消息被持久化到本地磁盘，并且支持数据备份防止数据丢失
 - 容错性：允许集群中节点失败（若副本数量为n,则允许n-1个节点失败）
 - 高并发：支持数千个客户端同时读写
 
-Kafka的使用场景：
+Kafka的使用场景
 - 日志收集：一个公司可以用Kafka可以收集各种服务的log，通过kafka以统一接口服务的方式开放给各种consumer，例如hadoop、Hbase、Solr等。
 - 消息系统：解耦和生产者和消费者、缓存消息等。
 - 用户活动跟踪：Kafka经常被用来记录web用户或者app用户的各种活动，如浏览网页、搜索、点击等活动，这些活动信息被各个服务器发布到kafka的topic中，然后订阅者通过订阅这些topic来做实时的监控分析，或者装载到hadoop、数据仓库中做离线分析和挖掘。
@@ -84,24 +85,29 @@ offset是消息在分区中的唯一标识， Kafka通过它来保证消息在�
 
 消费者分组，每个Consumer 必须属于一个group
 
+### 架构
 
+![Kafka架构](img/Kafka架构.png)
 
-Kaka为分区引入了多副本（ Replica）机制，通过增加副本数量可以提升容灾能力。同分区的不同副本中保存的是相同的消息（在同一时刻，副本之间并非完全一样），副本之间是一主多从的关系，其中 leader副本负责处理读写请求， follower副本只负责与 leader副本的消息同步。副本处于不同的 broker中，当 leader副本出现故障时，从 follower副本中重新选举新的 leader副本对外提供服务。Kaka通过多副本机制实现了故障的自动转移，当 Kafka集群中某个 broker失效时仍然能保证服务可用
+#### 副本
 
-生产者和消费者只与 leader副本进行交互，而 follower副本只负责消息的同步，很多时候 follower副本中的消息相对 leader副本而言会有一定的滞后。
+为了提高容灾能力，Kafka引入了多副本机制，每个分区有多个副本，副本之间是一主多从的关系
 
+生产者和消费者只与 leader副本进行交互，而 follower副本只负责消息的同步，很多时候 follower副本中的消息相对 leader副本而言会有一定的滞后
 
+**AR**（ Assigned Replicas）: 分区中的所有副本统称为AR
 
-Kafka消费端也具备一定的容灾能力。 Consumer使用拉（Pull）模式从服务端拉取消息，并且保存消费的具体位置，当消费者宕机后恢复上线时可以根据之前保存的消费位置重新拉取需要的消息进行消费，这样就不会造成消息丢失。
+**ISR**（Im- Sync Replicas）: 与leader副本保持一定程度的同步的副本集合（包含leader副本）
 
+**OSR**（Out- of-Sync Replicas）: 与 leader副本同步滞后过多的副本集合
 
+AR=ISR+OSR，在正常情况下，所有的 follower副本都应该与 leader副本保持一定程度的同步，即AR=ISR，OSR集合为空
 
-**AR**: 分区中的所有副本统称为AR（ Assigned Replicas）
+![kafka-offset](img/kafka-offset.png)
 
+**HW**：高水位，正在进行副本同步的offset，该offset之前的offset已经同步完成，可以被Consumer消费
 
-
-分区中的所有副本统称为AR（ Assigned Replicas）。所有与 leader副本保持一定程度同步的副本（包括 leader副本在内）组成ISR（Im- Sync Replicas），ISR集合是AR集合中的一个子集。消息会先发送到 leader副本，然后 follower副本才能从 leader副本中拉取消息进行同步，同步期间内 follower副本相对于 leader副本而言会有一定程度的滞后。前面所说的“一定程度的同步”是指可忍受的滞后范围，这个范围可以通过参数进行配置。与 leader副本同步滞后过多的副本（不包括 leader副本）组成OSR（Out- of-Sync Replicas），由此可见，AR=ISR+OSR。
-在正常情况下，所有的 follower副本都应该与 leader副本保持一定程度的同步，即AR=ISR, OSR集合为空。
+**LEO**：低水位，Leader最大的offset+1，下一条待写入的消息的位置
 
 ## 生产者
 
@@ -166,7 +172,9 @@ public class ProducerRecord<K, V> {
 
 #### send
 
-创建生产者实例和构建消息之后，就可以开始发送消息了。发送消息主要有三种模式：发后即忘(fire-and-forget)、同步(sync)及异步Casync)
+创建生产者实例和构建消息之后，就可以开始发送消息了。发送消息主要有三种模式
+
+发后即忘(fire-and-forget)、同步(sync)及异步Casync)
 
 ~~~java
 // 发送消息的
@@ -203,6 +211,7 @@ public interface Serializer<T> extends Closeable {
     } 
     // 序列化方法，将对象转换成字节数组
     byte[] serialize(String var1, T var2); 
+    
     default byte[] serialize(String topic, Headers headers, T data) {
         return this.serialize(topic, data);
     } 
@@ -289,7 +298,7 @@ public interface ProducerInterceptor<K, V> extends Configurable {
 
 整个生产者客户端由两个线程协调运行，这两个线程分别为主线程和 Sender线程（发送线程）。在主线程中由 KafkaProducer创建消息，然后通过可能的拦截器、序列化器和分区器的作用之后缓存到消息累加器（ RecordAccumulator，也称为消息收集器）中。 Sender线程负责从RecordAccumulator中获取消息并将其发送到 Kafka中。
 
-### 源码KafkaProducer
+
 
 
 
@@ -405,7 +414,21 @@ public class ConsumerRecord<K, V> {
 }
 ~~~
 
+#### 位移提交
 
+Kafka的每个分区的每条消息都有唯一的offset
+
+1. poll()返回没有被消费过的消息集合
+2. 消费位移存储在Kafka内部主题__consumer_offsets中
+3. 把消费位移存储起来的过程称为提交
+4. 消费位移提交的offset是当前消费的offset+1，表示下一条需要拉取的消息的位置
+
+自动提交会再次重复消费和消费丢失
+
+poll() ->[x+1,x+7] 当前处理的消息x+5
+
+* 拉取到消息立刻提交x+8，如果x+5异常，重启后从x+8开始消费，x+5到x+7的消息丢失
+* 消费完成后提交x+8，如果x+5异常，重启后从x+1开始消费，x+1到x+4的消息重复消费
 
 ### 消费者拦截器
 
@@ -417,7 +440,9 @@ public interface ConsumerInterceptor<K, V> extends Configurable, AutoCloseable {
 }
 ~~~
 
+### 再均衡
 
+再均衡是指分区的所属权从一个消费者转移到另一消费者的行为，它为消费组具备高可用性和伸缩性提供保障，使我们可以方便又安全地删除或添加消费者；再均衡发生期间，消费组内的消费者是无法读取消息的，在再均衡发生期间的这一小段时间内，消费组会变得不可用 
 
 ## 主题和分区
 
@@ -431,15 +456,35 @@ topic和partition都是提供给上层用户的抽象，而在副本层面或更
 
 ![topic-partition](img/topic-partition.png)
 
-优先副本的选举
+### 优先副本
 
-分区使用多副本机制来提升可靠性，但只有 leader副本对外提供读写服务，而 follower副本只负责在内部进行消息的同步。如果一个分区的 leader副本不可用，那么就意味着整个分区变得不可用，此时就需要 Kafka从剩尔的 follower副本中挑选一个新的 leader副本来继续对外提供服务。虽然不够严谨，但从某种程度上说， broker节点中 leader副本个数的多少决定了这个节点负载的高低。
+分区使用多副本机制来提升可靠性，但只有`leader`副本对外提供读写服务，而`follower`副本只负责在内部进行消息的同步。
+
+* 如果一个分区的 leader副本不可用，那么就意味着整个分区变得不可用
+* 此时就需要 Kafka从剩余的 follower副本中挑选一个新的 leader副本来继续对外提供服务
 
 
 
-分区重分配
+### 分区重分配
 
-当集群中的一个节点突然宕机下线时，如果节点上的分区是单副本的，那么这些分区就变得不可用了，在节点恢复前，相应的数据也就处于丢失状态；如果节点上的分区是多副本的，那么位于这个节点上的 leader副本的角色会转交到集群的其他 f follower副本中。总而言之，这个节点上的分区副本都已经处于功能失效的状态， Kaf ka并不会将这些失效的分区副本自动地迁移到集群中剩余的可用 broker节点上，如果放任不管，则不仅会影响整个集群的均衡负载还会影响整体服务的可用性和可靠性。
+当Kafka集群中的broker节点数发生变化时，会出现以下问题
+
+1、当集群中的一个节点突然宕机下线时
+
+* 如果节点上的分区是单副本的，那么这些分区就不可用，在节点恢复前，相应的数据也就处于丢失状态；
+* 如果节点上的分区是多副本的，那么该节点上的 leader副本的角色会转交到其他 follower副本中
+
+2、当集群中新增broker节点时，只要新建topic的分区会分配到该节点，之前的topic分区不会分配到新的broker节点，会导致之前的topic负载不均衡
+
+为了解决上述的问题，使分区副本合理的分配，Kafka提供了分区冲分配的功能
+
+### Leader选举
+
+当topic的分区数发生变化（新分区上线或者leader副本宕机）时，分区需要选举一个新的leader对外提供服务，对应的选举策略为OfflinePartition Leader Election Strategy
+
+基本思路是按照AR集合中副本的顺序查找第一个存活的副本，并且这个副本在ISR集合中
+
+* 注：这里是根据AR的顺序，而不是ISR的顺序进行选举
 
 
 
@@ -447,8 +492,132 @@ topic和partition都是提供给上层用户的抽象，而在副本层面或更
 
 ## Kafka 存储原理
 
+### 存储结构
 
+![文件结构](img/文件结构.png)
 
+为了便于消息的检索,每个 LogSegment中的日志文件(以".log"为文件后缀)都有对应的两个索引文件
 
+* 偏移量索引文件(以". index"为文件后缀)
+* 时间戳索引文件(以".timeindex"为文件后缀)
 
-可靠性
+每个LogSegment都有一个基准偏移量 baseOffset，用来表示当前LogSegment中第一条消息的 offset；偏移量是一个64位的长整型数，日志文件和两个索引文件都是根据基准偏移量( baseOffset)命名的，名称固定为20位数字，没有达到的位数则用0填充
+
+* 例如第一个LogSegment的基准偏移量为0，对应的日志文件为00000000000000000000.log
+* `00000000000000000133.1og`文件表示当前LogSegment对应的基准位移是133，该 LogSegment中的第一条消息的偏移量为133，同时反映出第一个 LogSegment中共有133条消息(偏移量从0至132的消息)
+
+### 日志格式
+
+Kafka查看日志信息命令
+
+~~~sh
+$ bin/kafka-run-class.sh kafka.tools.DumpLogSegments --files /tmp/kafka-logs/topic-create-3/00000000000000000000.log  --print-data-log
+
+Dumping /tmp/kafka-logs/topic-create-3/00000000000000000000.log
+Starting offset: 0
+baseOffset: 0 lastOffset: 0 count: 1 baseSequence: -1 lastSequence: -1 producerId: -1 producerEpoch: -1 partitionLeaderEpoch: 0 isTransactional: false isControl: false position: 0 CreateTime: 1582795316559 size: 81 magic: 2 compresscodec: NONE crc: 1858205989 isvalid: true
+| offset: 0 CreateTime: 1582795316559 keysize: 4 valuesize: 9 sequence: -1 headerKeys: [] key:  payload: msg-test2
+baseOffset: 1 lastOffset: 1 count: 1 baseSequence: -1 lastSequence: -1 producerId: -1 producerEpoch: -1 partitionLeaderEpoch: 0 isTransactional: false isControl: false position: 81 CreateTime: 1582795317061 size: 81 magic: 2 compresscodec: NONE crc: 1682208138 isvalid: true
+| offset: 1 CreateTime: 1582795317061 keysize: 4 valuesize: 9 sequence: -1 headerKeys: [] key:  payload: msg-test3
+~~~
+
+#### v0版本
+
+Kafka消息格式的第一个版本为v0版本，在 Kafka0.10.0之前都采用的这个消息格式
+
+![v0格式](img/v0格式.png)
+
+**crc32**(4B)：crc32校验值，校验范围为 magic到value之间
+
+**magic**(1B)：消息格式版本号，此版本的 magic值为0
+
+**attributes**(1B)：消息的属性；总共占1个字节，低3位表示压缩类型：0表示NONE、1表示GZIP、2表示 SNAPPY、3表示LZ4
+
+**key length**(4B)：表示消息的key的长度；如果为-1，则表示没有设置key，即key==null 
+
+**key**：消息的key，可以为null 
+
+**value length**(4B)：实际消息体的长度；如果为-1，则表示消息为空
+
+**value**：消息体，可以为null 
+
+v0版本中一个消息的最小长度为crc32 + magic + attributes + key length + value length = 4B+1B+B+4B+4B=14B；v0版本中一条消息的最小长度为14B
+
+#### v1版本
+
+Kafka从0.10.0~0.11.0版本所使用的消息格式版本为v1，相比v0版本，仅仅多了一个 timestamp字段，表示消息的时间戳
+
+![v1格式](img/v1格式.png)
+
+#### v2版本
+
+v2版本中消息集称为 Record Batch，而不是之前的 Message Set，内部也包含了一条或多条消息
+
+### 日志清理
+
+Kafka将消息存储在磁盘中，随着磁盘占用空间的不断增加，我们需要对消息做一定的清理操作。Kafka提供了两种日志清理策略
+
+1. **日志删除**( Log retention)：按照一定的保留策略直接删除不符合条件的日志分段
+2. **日志压缩**( Log Compaction)：针对每个消息的key进行整合，对于有相同key的不同value的消息，只保留最后一个版本.
+
+#### 日志删除
+
+在 Kafka的日志管理器中会有一个专门的日志删除任务，用来周期性地检测和删除不符合保留条件的日志分段文件
+
+##### 基于时间
+
+日志删除任务会检查当前日志文件中是否存在保留时间超过设定的阈值，以此寻找可删除的日志分段文件集合
+
+査找过期的日志分段文件，并不是简单地根据日志分段的最近修改时间 lastModifiedTime来计算的，而是根据日志分段中最大的时间戳 largestTimeStamp来计算的
+
+##### 基于日志大小
+
+检查当前日志的大小是否超过设定的阈值，以此寻找可删除的日志分段的文件集合
+
+##### 基于起始偏移量
+
+基于日志起始偏移量的保留策略的判断依据是某日志分段的下一个日志分段的起始偏移量baseOffset是否小于等于 logStartOffset，若是，则可以删除此日志分段
+
+#### 日志压缩
+
+对于有相同key的不同 value值的消息，只保留最后一个版本；如果应用只关心key对应的最新value值，可以开启Kafka的日志清理功能，Kafka会定期将相同key的消息进行合并，只保留最新的 value值
+
+### 磁盘存储
+
+Kafka依赖于文件系统(磁盘)来存储和缓存消息，利用磁盘的顺序IO来进行快速的读写，同时减少随机IO
+
+#### 页缓存
+
+页缓存是操作系统实现的一种主要的磁盘缓存，用来减少对磁盘IO的操作；通过把磁盘中的数据缓存到内存中，把对磁盘的访问变为对内存的访问。
+
+当一个进程准备读取磁盘上的文件内容时，操作系统会先查看待读取的数据所在的页(page)是否在页缓存(pagecache)中，如果存在(命中)则直接返回数据，从而避免了对物理磁盘的IO操作；如果没有命中，则操作系统会向磁盘发起读取请求并将读取的数据页存入页缓存，之后再将数据返回给进程
+
+#### **顺序写入**
+
+对大多数硬盘，尤其是机械硬盘，顺序IO速度要远大于随机IO速度，Kafka使用顺序IO写入数据，把数据写入每个Partition文件的尾部，但同时导致数据无法删除，所以Kafka无法删除消息
+
+##### Memory Mapped Files
+
+即便是顺序写入硬盘，硬盘的访问速度还是不可能追上内存。所以Kafka的数据并不是实时的写入硬盘，它充分利用了现代操作系统分页存储来利用内存提高I/O效率
+
+#### 零拷贝
+
+零拷贝（Zero-copy）：指计算机执行操作时，CPU不需要先将数据从某处内存复制到另一个特定区域，这种技术通常用于通过网络传输文件时节省CPU周期和内存带宽
+
+传统模式下，对一个文件进行传输的时候，流程如下：
+
+- 调用 Read 函数，文件数据被 Copy 到内核缓冲区
+- Read 函数返回，文件数据从内核缓冲区 Copy 到用户缓冲区
+- Write 函数调用，将文件数据从用户缓冲区 Copy 到内核与 Socket 相关的缓冲区
+- 数据从 Socket 缓冲区 Copy 到相关协议引擎
+
+文件数据实际上是经过了四次 Copy 操作：
+
+**硬盘—>内核 buf—>用户 buf—>Socket 相关缓冲区—>协议引擎**
+
+基于 Sendfile 实现零拷贝，可以减少Copy次数，同时减少上下文切换
+
+- Sendfile 系统调用，文件数据被 Copy 至内核缓冲区。
+- 再从内核缓冲区 Copy 至内核中 Socket 相关的缓冲区。
+- 最后再 Socket 相关的缓冲区 Copy 到协议引擎。
+

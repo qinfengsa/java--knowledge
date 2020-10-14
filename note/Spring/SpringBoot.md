@@ -270,7 +270,7 @@ protected ConfigurableApplicationContext createApplicationContext() {
 
 ##### **构造方法**
 
-可以看到，三个class的无参构造是没有区别的，熟悉注解驱动的话应该直到：AnnotatedBeanDefinitionReader的构造方法中注册了注解驱动相关的bean，最重要的两个是ConfigurationClassPostProcessor和AutowiredAnnotationBeanPostProcessor
+可以看到，三个class的无参构造是没有区别的，熟悉注解驱动的话应该知道：AnnotatedBeanDefinitionReader的构造方法中注册了注解驱动相关的bean，最重要的两个是ConfigurationClassPostProcessor和AutowiredAnnotationBeanPostProcessor
 
 **ConfigurationClassPostProcessor**：负责解析加了@Configuration的配置类，还会解析@ComponentScan、@ComponentScans注解扫描的包，以及@Import等注解
 
@@ -596,17 +596,17 @@ public @interface SpringBootApplication {
 
 SpringBootApplication 本质上是由3 个注解组成，分别是
 1. @Configuration  声明当前类是一个配置类
-2. @EnableAutoConfiguration 自动装配
+2. @EnableAutoConfiguration 激活自动装配
 3. @ComponentScan 扫描目录下的bean
 
-**EnableAutoConfiguration**
+### **EnableAutoConfiguration**
 
 我们可以@EnableAutoConfiguration实际相当于import了两个类；
 
 @Import注解可以导入3种类型的class
 
 * ImportSelector 接口：调用selectImports方法
-* ImportBeanDefinitionRegistrar 接口：调用registerBeanDefinitions方法
+* ImportBeanDefinitionRegistrar 接口：调用registerBeanDefinitions方法，注册BeanDefinition
 * 其他配置类（需要防止循环导入）：递归进行解析
 
 ~~~java
